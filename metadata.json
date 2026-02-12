@@ -1,0 +1,5 @@
+{
+  "name": "Pulser AI Market Agent",
+  "description": "An advanced AI sentiment analysis tool that scans global market news to provide Buy, Sell, or Hold recommendations for stocks, crypto, and indices using Gemini-3 with Search Grounding.",
+  "requestFramePermissions": []
+}
