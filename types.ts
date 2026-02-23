@@ -23,12 +23,15 @@ export interface MarketAsset {
 
 export interface PulserAnalysis {
   assetId: string;
-  recommendation: Sentiment;
+  shortTermTrend: Sentiment;
+  longTermTrend: Sentiment;
   confidenceScore: number; // 0-100
   summary: string;
   sources: { title: string; uri: string }[];
   lastUpdated: string;
   isAnalyzing: boolean;
+  currentPrice?: string;
+  currencySymbol?: string;
 }
 
 export interface AppState {

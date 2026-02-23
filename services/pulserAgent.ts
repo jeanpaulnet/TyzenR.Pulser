@@ -3,24 +3,31 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { MarketAsset, Sentiment, PulserAnalysis } from "../types";
 
 export class PulserAgent {
-  private ai: GoogleGenAI;
-
-  constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-  }
-
+  /**
+   * Analyzes market sentiment (Short & Long Term) using search-grounded AI.
+   */
   async analyzeAsset(asset: MarketAsset): Promise<PulserAnalysis> {
-    const prompt = `Analyze the current market sentiment for "${asset.name}" (${asset.symbol}) in the ${asset.region} ${asset.type} market. 
-    1. Scan the latest news, financial reports, and social sentiment from the last 24-48 hours.
-    2. Provide a recommendation: BUY, SELL, or HOLD.
-    3. Provide a confidence score between 0 and 100.
-    4. Summarize the key drivers behind this sentiment in 3-4 concise bullet points.
+    // The API key is provided by the user.
+    const ai = new GoogleGenAI({ apiKey: "AIzaSyBBX8fftXHCPXnSVF4Vztr3Hkuy4bpxHzY" });
+
+    const prompt = `Conduct an exhaustive market pulse scan for "${asset.name}" (Ticker: ${asset.symbol}) in the ${asset.region} ${asset.type} market. 
     
-    Output must be strictly JSON format.`;
+    CRITICAL OBJECTIVES:
+    1. CURRENT PRICE: Retrieve the absolute latest trading price with currency symbol.
+    2. SENTIMENT AGGREGATION: Scan recent 24h news (Bloomberg, FT, Reuters, WSJ, CNBC) and technical charts.
+    3. DUAL-HORIZON RECOMMENDATION:
+       - SHORT-TERM (Next 7-14 Days): Focus on momentum, earnings news, and macro events.
+       - LONG-TERM (Next 12 Months): Focus on fundamentals, competitive moat, and sector cycles.
+    
+    SYSTEM INSTRUCTIONS:
+    - Return valid JSON matching the specified schema.
+    - Be objective. If there is high uncertainty, favor HOLD.
+    - Provide a concise summary (max 60 words) explaining the 'Why' behind the trends.`;
 
     try {
-      const response = await this.ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+      // Use gemini-3-pro-preview for best-in-class financial reasoning and grounding.
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],
@@ -28,42 +35,75 @@ export class PulserAgent {
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              recommendation: { type: Type.STRING, description: "BUY, SELL, or HOLD" },
-              confidenceScore: { type: Type.NUMBER },
-              summary: { type: Type.STRING },
+              shortTermTrend: { 
+                type: Type.STRING, 
+                description: "Short-term rating: BUY, SELL, HOLD, or NEUTRAL." 
+              },
+              longTermTrend: { 
+                type: Type.STRING, 
+                description: "Long-term rating: BUY, SELL, HOLD, or NEUTRAL." 
+              },
+              currentPrice: {
+                type: Type.STRING,
+                description: "Numerical value of current price."
+              },
+              currencySymbol: {
+                type: Type.STRING,
+                description: "Currency sign ($, ₹, £, etc)."
+              },
+              confidenceScore: { 
+                type: Type.NUMBER,
+                description: "Probability of prediction accuracy (0-100)."
+              },
+              summary: { 
+                type: Type.STRING,
+                description: "Synthesis of key market drivers."
+              },
             },
-            required: ["recommendation", "confidenceScore", "summary"]
+            required: ["shortTermTrend", "longTermTrend", "confidenceScore", "summary", "currentPrice", "currencySymbol"]
           }
         },
       });
 
-      const result = JSON.parse(response.text || '{}');
+      const jsonText = response.text;
+      if (!jsonText) throw new Error("Null response from intelligence engine.");
       
-      // Extract grounding sources
+      const result = JSON.parse(jsonText);
+      
+      // Extract grounding metadata to provide transparency into AI's sources as required.
       const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
         ?.map((chunk: any) => ({
           title: chunk.web?.title || 'Market Source',
           uri: chunk.web?.uri || '#'
         }))
-        .filter((s: any) => s.uri !== '#')
+        .filter((s: any) => s.uri && s.uri !== '#')
         .slice(0, 5) || [];
 
       return {
         assetId: asset.id,
-        recommendation: (result.recommendation?.toUpperCase() as Sentiment) || Sentiment.NEUTRAL,
+        shortTermTrend: (result.shortTermTrend?.toUpperCase() as Sentiment) || Sentiment.NEUTRAL,
+        longTermTrend: (result.longTermTrend?.toUpperCase() as Sentiment) || Sentiment.NEUTRAL,
         confidenceScore: result.confidenceScore || 50,
-        summary: result.summary || "No recent high-impact news found.",
+        summary: result.summary || "Scan complete. Sentiment levels are stable.",
+        currentPrice: result.currentPrice,
+        currencySymbol: result.currencySymbol,
         sources: sources,
         lastUpdated: new Date().toISOString(),
         isAnalyzing: false,
       };
-    } catch (error) {
-      console.error(`Error analyzing ${asset.symbol}:`, error);
+    } catch (error: any) {
+      // Re-throw if the key selection is invalid to trigger the UI dialog
+      if (error?.message?.includes("Requested entity was not found")) {
+        throw error;
+      }
+      
+      console.error(`Intelligence Error [${asset.symbol}]:`, error);
       return {
         assetId: asset.id,
-        recommendation: Sentiment.NEUTRAL,
+        shortTermTrend: Sentiment.NEUTRAL,
+        longTermTrend: Sentiment.NEUTRAL,
         confidenceScore: 0,
-        summary: "Analysis failed. Please check your connection or try again later.",
+        summary: "Market connection interrupted. Ensure API engine is configured correctly.",
         sources: [],
         lastUpdated: new Date().toISOString(),
         isAnalyzing: false,
