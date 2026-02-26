@@ -110,7 +110,7 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-white">Pulser</h1>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center md:text-left">AI Market Agent from News</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center md:text-left">AI Market Sentiment Intelligence</p>
             </div>
           </div>
 
