@@ -1,16 +1,10 @@
+export type SignalType = 'BUY' | 'SELL' | 'NEUTRAL';
 
 export enum MarketType {
-  STOCK = 'STOCK',
-  CRYPTO = 'CRYPTO',
-  COMMODITY = 'COMMODITY',
-  INDEX = 'INDEX'
-}
-
-export enum Sentiment {
-  BUY = 'BUY',
-  SELL = 'SELL',
-  HOLD = 'HOLD',
-  NEUTRAL = 'NEUTRAL'
+  STOCK = 'stock',
+  CRYPTO = 'crypto',
+  COMMODITY = 'commodity',
+  INDEX = 'index',
 }
 
 export interface MarketAsset {
@@ -18,23 +12,23 @@ export interface MarketAsset {
   symbol: string;
   name: string;
   type: MarketType;
-  region: 'US' | 'INDIA' | 'GLOBAL';
+  region?: string;
 }
 
 export interface PulserAnalysis {
-  assetId: string;
-  shortTermTrend: Sentiment;
-  longTermTrend: Sentiment;
-  confidenceScore: number; // 0-100
-  summary: string;
-  sources: { title: string; uri: string }[];
-  lastUpdated: string;
-  isAnalyzing: boolean;
-  currentPrice?: string;
-  currencySymbol?: string;
+  signal?: SignalType;
+  shortTerm?: SignalType;
+  longTerm?: SignalType;
+  price?: number;
+  change?: number;
+  changePercent?: number;
+  summary?: string;
+  isAnalyzing?: boolean;
 }
 
 export interface AppState {
   assets: MarketAsset[];
   analyses: Record<string, PulserAnalysis>;
+  loading?: Record<string, boolean>;
+  errors?: Record<string, string>;
 }
