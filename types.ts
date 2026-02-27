@@ -1,4 +1,5 @@
 export type SignalType = 'BUY' | 'SELL' | 'NEUTRAL';
+export type Sentiment = 'BUY' | 'SELL' | 'HOLD' | 'NEUTRAL';
 
 export enum MarketType {
   STOCK = 'stock',
@@ -16,14 +17,22 @@ export interface MarketAsset {
 }
 
 export interface PulserAnalysis {
+  assetId?: string;
   signal?: SignalType;
   shortTerm?: SignalType;
   longTerm?: SignalType;
+  shortTermTrend?: Sentiment;
+  longTermTrend?: Sentiment;
   price?: number;
+  currentPrice?: number;
+  currencySymbol?: string;
   change?: number;
   changePercent?: number;
   summary?: string;
   isAnalyzing?: boolean;
+  confidenceScore?: number;
+  sources?: any[];
+  lastUpdated?: string;
 }
 
 export interface AppState {
