@@ -204,10 +204,10 @@ const App: React.FC = () => {
              <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-emerald-400 transition-colors text-xs font-bold uppercase tracking-widest">
                <Info className="w-3 h-3" /> Billing Info
              </a>
-             <a href="https://pulser.tyzenr.com" className="flex items-center gap-2 hover:text-emerald-400 transition-colors text-xs font-bold uppercase tracking-widest">
+             <a href="https://futurecaps.buzz/" className="flex items-center gap-2 hover:text-emerald-400 transition-colors text-xs font-bold uppercase tracking-widest">
                <Globe className="w-3 h-3" /> Live Markets
              </a>
-             <a href="https://pulser.tyzenr.com" className="flex items-center gap-2 hover:text-emerald-400 transition-colors text-xs font-bold uppercase tracking-widest">
+             <a href="https://futurecaps.buzz/" className="flex items-center gap-2 hover:text-emerald-400 transition-colors text-xs font-bold uppercase tracking-widest">
                <Github className="w-3 h-3" /> Repository
              </a>
           </div>

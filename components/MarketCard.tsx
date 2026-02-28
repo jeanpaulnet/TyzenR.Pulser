@@ -116,7 +116,7 @@ const MarketCard: React.FC<MarketCardProps> = ({ asset, analysis, onRefresh, onR
             </p>
           </div>
 
-          {analysis.sources.length > 0 && (
+          {analysis.sources?.length ? analysis.sources.length > 0 && (
             <div className="pt-4 border-t border-slate-700/40">
               <span className="text-[9px] text-slate-600 uppercase tracking-[0.2em] font-black block mb-2.5">Global Intelligence Sources</span>
               <div className="flex flex-wrap gap-2">
@@ -128,17 +128,19 @@ const MarketCard: React.FC<MarketCardProps> = ({ asset, analysis, onRefresh, onR
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-[9px] font-bold text-slate-400 hover:text-emerald-400 transition-colors bg-slate-900/40 border border-slate-700/50 px-2.5 py-1.5 rounded-lg"
                   >
-                    {source.title.length > 15 ? source.title.substring(0, 15) + '...' : source.title}
+                    {(source.title?.length || 0) > 15 ? source.title.substring(0, 15) + '...' : source.title}
                     <ExternalLink className="w-2 h-2 opacity-50" />
                   </a>
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
           
-          <div className="text-[9px] text-slate-600 text-right font-bold mt-2">
-             SYNCED: {new Date(analysis.lastUpdated).toLocaleTimeString()}
-          </div>
+          {analysis.lastUpdated && (
+            <div className="text-[9px] text-slate-600 text-right font-bold mt-2">
+               SYNCED: {new Date(analysis.lastUpdated).toLocaleTimeString()}
+            </div>
+          )}
         </div>
       ) : (
         <div className="h-44 flex flex-col items-center justify-center text-slate-500 space-y-4 border border-dashed border-slate-700/50 rounded-3xl bg-slate-900/10">

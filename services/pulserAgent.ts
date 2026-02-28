@@ -8,7 +8,7 @@ export class PulserAgent {
    */
   async analyzeAsset(asset: MarketAsset): Promise<PulserAnalysis> {
     // The API key is provided by the user.
-    const ai = new GoogleGenAI({ apiKey: "AIzaSyBBX8fftXHCPXnSVF4Vztr3Hkuy4bpxHzY" });
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     const prompt = `Conduct an exhaustive market pulse scan for "${asset.name}" (Ticker: ${asset.symbol}) in the ${asset.region} ${asset.type} market. 
     

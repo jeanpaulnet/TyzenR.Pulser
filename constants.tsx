@@ -1,7 +1,7 @@
 
 import { MarketAsset, MarketType } from './types';
 
-export const APP_URL = 'https://pulser.tyzenr.com';
+export const APP_URL = 'https://futurecaps.buzz/';
 
 export const INITIAL_ASSETS: MarketAsset[] = [
   { id: '1', symbol: 'AAPL', name: 'Apple Inc.', type: MarketType.STOCK, region: 'US' },
