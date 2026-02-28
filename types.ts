@@ -1,5 +1,11 @@
 export type SignalType = 'BUY' | 'SELL' | 'NEUTRAL';
-export type Sentiment = 'BUY' | 'SELL' | 'HOLD' | 'NEUTRAL';
+
+export enum Sentiment {
+  BUY = 'BUY',
+  SELL = 'SELL',
+  HOLD = 'HOLD',
+  NEUTRAL = 'NEUTRAL',
+}
 
 export enum MarketType {
   STOCK = 'stock',
