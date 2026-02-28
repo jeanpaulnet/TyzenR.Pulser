@@ -1,5 +1,5 @@
 {
-  "name": "Pulser AI Market Sentiment Intelligence",
+  "name": "Pulser",
   "description": "An advanced AI sentiment analysis tool scanning global market news to provide Buy, Sell, or Hold recommendations using Gemini-3 with Search Grounding.",
   "requestFramePermissions": []
 }
