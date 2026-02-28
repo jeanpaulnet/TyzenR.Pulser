@@ -5,7 +5,7 @@ import { INITIAL_ASSETS } from './constants';
 import { pulser } from './services/pulserAgent';
 import MarketCard from './components/MarketCard';
 import AddAssetModal from './components/AddAssetModal';
-import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info } from 'lucide-react';
+import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp } from 'lucide-react';
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
@@ -134,6 +134,13 @@ const App: React.FC = () => {
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Search and Filters */}
         <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+          <button 
+            onClick={() => window.open('https://futurecaps.com/free?ref=1-pulser', '_blank')}
+            className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-slate-950 px-6 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 shadow-lg shadow-yellow-400/20 w-full md:w-auto"
+          >
+            <TrendingUp className="w-4 h-4" /> Get a Free Multibagger
+          </button>
+
           <div className="relative w-full md:w-96">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <input 
