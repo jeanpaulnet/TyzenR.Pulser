@@ -109,7 +109,7 @@ const App: React.FC = () => {
               <Zap className="w-6 h-6 text-white fill-current" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white">Pulser</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-white">Pulser AI</h1>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center md:text-left">AI Market Sentiment Intelligence</p>
             </div>
           </div>
@@ -169,7 +169,7 @@ const App: React.FC = () => {
             <div className="w-px h-6 bg-slate-800 mx-2" />
             <button 
               onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl border border-slate-700 text-emerald-400 font-bold text-xs transition-all whitespace-nowrap"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl border border-blue-500 text-white font-bold text-xs transition-all whitespace-nowrap shadow-lg shadow-blue-600/20"
             >
               <Plus className="w-4 h-4" /> Add Asset
             </button>
@@ -195,7 +195,7 @@ const App: React.FC = () => {
               <p className="text-sm max-w-xs text-center mt-2 text-slate-600">No assets matching your search. Add a new ticker symbol to start the pulse scan.</p>
               <button 
                 onClick={() => setIsAddModalOpen(true)}
-                className="mt-8 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-6 py-2 rounded-full font-bold hover:bg-emerald-500 hover:text-white transition-all"
+                className="mt-8 bg-blue-500/10 text-blue-500 border border-blue-500/20 px-6 py-2 rounded-full font-bold hover:bg-blue-500 hover:text-white transition-all"
               >
                 Track New Asset
               </button>
@@ -221,10 +221,10 @@ const App: React.FC = () => {
           
           <div className="text-center space-y-2">
             <p className="text-[10px] font-black text-slate-500 tracking-[0.3em] uppercase">
-              Pulser Intelligence Engine • Powered by Gemini 3 Pro
+              Pulser AI Intelligence Engine • Powered by Gemini 3 Pro
             </p>
             <p className="text-[10px] text-slate-700 italic max-w-2xl leading-relaxed">
-              Disclaimer: Pulser leverages high-fidelity AI models for sentiment scanning. Analysis results are not financial advice. 
+              Disclaimer: Pulser AI leverages high-fidelity AI models for sentiment scanning. Analysis results are not financial advice. 
               The system utilizes real-time search grounding to minimize hallucination and maximize precision.
             </p>
           </div>

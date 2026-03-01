@@ -18,9 +18,11 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onAdd, onClose }) => {
     e.preventDefault();
     if (!symbol || !name) return;
 
+    const formattedSymbol = symbol.startsWith('$') ? symbol.toUpperCase() : `$${symbol.toUpperCase()}`;
+
     onAdd({
       id: Date.now().toString(),
-      symbol: symbol.toUpperCase(),
+      symbol: formattedSymbol,
       name,
       type,
       region

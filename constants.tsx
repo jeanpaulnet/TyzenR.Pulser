@@ -1,13 +1,15 @@
 
 import { MarketAsset, MarketType } from './types';
 
-export const APP_URL = 'https://futurecaps.buzz/';
+export const APP_URL = 'https://pulser.futurecaps.com/';
 
 export const INITIAL_ASSETS: MarketAsset[] = [
-  { id: '1', symbol: 'AAPL', name: 'Apple Inc.', type: MarketType.STOCK, region: 'US' },
-  { id: '3', symbol: 'BTC', name: 'Bitcoin', type: MarketType.CRYPTO, region: 'GLOBAL' },
-  { id: '4', symbol: 'GOLD', name: 'Gold Spot', type: MarketType.COMMODITY, region: 'GLOBAL' },
-  { id: '5', symbol: 'SILVER', name: 'Silver Spot', type: MarketType.COMMODITY, region: 'GLOBAL' },
+  { id: '0', symbol: '$SPY', name: 'S&P 500', type: MarketType.INDEX, region: 'US' },
+  { id: '1', symbol: '$AAPL', name: 'Apple Inc.', type: MarketType.STOCK, region: 'US' },
+  { id: '3', symbol: '$BTC', name: 'Bitcoin', type: MarketType.CRYPTO, region: 'GLOBAL' },
+  { id: '4', symbol: '$GOLD', name: 'Gold Spot', type: MarketType.COMMODITY, region: 'GLOBAL' },
+  { id: '5', symbol: '$SILVER', name: 'Silver Spot', type: MarketType.COMMODITY, region: 'GLOBAL' },
+  { id: '6', symbol: '$DJI', name: 'Dow Jones', type: MarketType.INDEX, region: 'US' },
 ];
 
 export const SENTIMENT_COLORS = {
