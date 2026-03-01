@@ -1,7 +1,7 @@
 
 import { MarketAsset, MarketType } from './types';
 
-export const APP_URL = 'https://pulser.futurecaps.com/';
+export const APP_URL = 'https://futurecaps.buzz';
 
 export const INITIAL_ASSETS: MarketAsset[] = [
   { id: '0', symbol: '$NIFTY', name: 'NIFTY 50', type: MarketType.INDEX, region: 'INDIA' },
