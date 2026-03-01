@@ -3,14 +3,33 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { MarketAsset, Sentiment, PulserAnalysis } from "../types";
 
 export class PulserAgent {
+  private cachedApiKey: string | null = null;
+
+  private async getApiKey(): Promise<string> {
+    if (this.cachedApiKey) return this.cachedApiKey;
+    
+    try {
+      // Fetching the key from the requested endpoint
+      const response = await fetch('https://webapi.tyzenr.com/keys/gemini');
+      if (!response.ok) throw new Error('Failed to fetch API key');
+      const data = await response.text();
+      this.cachedApiKey = data.trim();
+      return this.cachedApiKey;
+    } catch (error) {
+      console.error('Error fetching API key:', error);
+      throw error;
+    }
+  }
+
   /**
    * Analyzes market sentiment (Short & Long Term) using search-grounded AI.
    */
   async analyzeAsset(asset: MarketAsset): Promise<PulserAnalysis> {
-    // The API key is provided by the user.
-    const ai = new GoogleGenAI({ apiKey: "AIzaSyDn1KPwDGidRH10AD52FVsbEpM5SwrkJSA" });
+    try {
+      const apiKey = await this.getApiKey();
+      const ai = new GoogleGenAI({ apiKey });
 
-    const prompt = `Conduct an exhaustive market pulse scan for "${asset.name}" (Ticker: ${asset.symbol}) in the ${asset.region} ${asset.type} market. 
+      const prompt = `Conduct an exhaustive market pulse scan for "${asset.name}" (Ticker: ${asset.symbol}) in the ${asset.region} ${asset.type} market. 
     
     CRITICAL OBJECTIVES:
     1. CURRENT PRICE: Retrieve the absolute latest trading price with currency symbol.
@@ -24,7 +43,6 @@ export class PulserAgent {
     - Be objective. If there is high uncertainty, favor HOLD.
     - Provide a concise summary (max 60 words) explaining the 'Why' behind the trends.`;
 
-    try {
       // Use gemini-3-pro-preview for best-in-class financial reasoning and grounding.
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
