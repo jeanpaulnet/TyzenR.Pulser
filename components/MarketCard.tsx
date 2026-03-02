@@ -55,7 +55,7 @@ const MarketCard: React.FC<MarketCardProps> = ({ asset, analysis, onRefresh, onR
             </h3>
             {analysis?.currentPrice && !isAnalyzing && (
               <span className="text-xl font-bold text-emerald-400">
-                {analysis.currencySymbol === '₹' || analysis.currencySymbol === 'INR' ? 'Rs.' : 
+                {analysis.currencySymbol === 'Rs.' || analysis.currencySymbol === 'INR' ? '₹' : 
                  analysis.currencySymbol === '$' || analysis.currencySymbol === 'USD' ? '$' : 
                  analysis.currencySymbol}{analysis.currentPrice}
               </span>

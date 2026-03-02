@@ -67,7 +67,7 @@ export class PulserAgent {
               },
               currencySymbol: {
                 type: Type.STRING,
-                description: "Currency sign (use '$' for USD, 'Rs.' for INR)."
+                description: "Currency sign (use '$' for USD, '₹' for INR)."
               },
               confidenceScore: { 
                 type: Type.NUMBER,
