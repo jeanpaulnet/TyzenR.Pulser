@@ -32,7 +32,7 @@ export class PulserAgent {
       const prompt = `Conduct an exhaustive market pulse scan for "${asset.name}" (Ticker: ${asset.symbol}) in the ${asset.region} ${asset.type} market. 
     
     CRITICAL OBJECTIVES:
-    1. CURRENT PRICE: Retrieve the absolute latest trading price with currency symbol.
+    1. CURRENT PRICE: Retrieve the absolute latest trading price. For Stocks, Indexes, and Crypto, always provide the price in USD ($) unless the asset is specifically from the Indian market (INR/₹). For Commodities, provide the price in USD ($).
     2. SENTIMENT AGGREGATION: Scan recent 24h news (Bloomberg, FT, Reuters, WSJ, CNBC) and technical charts.
     3. DUAL-HORIZON RECOMMENDATION:
        - SHORT-TERM (Next 7-14 Days): Focus on momentum, earnings news, and macro events.
@@ -88,6 +88,12 @@ export class PulserAgent {
       
       const result = JSON.parse(jsonText);
       
+      // Sanitize price - remove quotes and &quot; entities that might be returned by the AI
+      const sanitizedPrice = result.currentPrice?.toString()
+        .replace(/["']/g, '')
+        .replace(/&quot;/g, '')
+        .trim();
+      
       // Extract grounding metadata to provide transparency into AI's sources as required.
       const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
         ?.map((chunk: any) => ({
@@ -103,7 +109,7 @@ export class PulserAgent {
         longTermTrend: (result.longTermTrend?.toUpperCase() as Sentiment) || Sentiment.NEUTRAL,
         confidenceScore: result.confidenceScore || 50,
         summary: result.summary || "Scan complete. Sentiment levels are stable.",
-        currentPrice: result.currentPrice,
+        currentPrice: sanitizedPrice,
         currencySymbol: result.currencySymbol,
         sources: sources,
         lastUpdated: new Date().toISOString(),
