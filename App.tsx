@@ -205,29 +205,11 @@ const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-900 py-12 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col items-center gap-6">
-          <div className="flex justify-center gap-8 text-slate-600">
-             <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-emerald-400 transition-colors text-xs font-bold uppercase tracking-widest">
-               <Info className="w-3 h-3" /> Billing Info
-             </a>
-             <a href="https://futurecaps.buzz/" className="flex items-center gap-2 hover:text-emerald-400 transition-colors text-xs font-bold uppercase tracking-widest">
-               <Globe className="w-3 h-3" /> Live Markets
-             </a>
-             <a href="https://futurecaps.buzz/" className="flex items-center gap-2 hover:text-emerald-400 transition-colors text-xs font-bold uppercase tracking-widest">
-               <Github className="w-3 h-3" /> Repository
-             </a>
-          </div>
-          
-          <div className="text-center space-y-2">
-            <p className="text-[10px] font-black text-slate-500 tracking-[0.3em] uppercase">
-              Pulser AI Intelligence Engine • Powered by Gemini 3 Pro
-            </p>
-            <p className="text-[10px] text-slate-700 italic max-w-2xl leading-relaxed">
-              Disclaimer: Pulser AI leverages high-fidelity AI models for sentiment scanning. Analysis results are not financial advice. 
-              The system utilizes real-time search grounding to minimize hallucination and maximize precision.
-            </p>
-          </div>
+      <footer className="border-t border-slate-900 py-8 px-4 mt-auto">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-[11px] text-slate-500 italic leading-relaxed max-w-3xl mx-auto">
+            Disclaimer: AI scanning multiple websites & providing Action Insights. These will be used for personal trading/investing purposes by the experienced person. Website is not accountable for any profit or loss incurred.
+          </p>
         </div>
       </footer>
 
