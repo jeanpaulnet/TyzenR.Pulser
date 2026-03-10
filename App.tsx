@@ -208,7 +208,7 @@ const App: React.FC = () => {
       <footer className="border-t border-slate-900 py-8 px-4 mt-auto">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-[11px] text-slate-500 italic leading-relaxed max-w-3xl mx-auto">
-            Disclaimer: AI scanning multiple websites & providing Action Insights. These will be used for personal trading/investing purposes by the experienced person. Website is not accountable for any profit or loss incurred.
+            Disclaimer: AI scanning multiple websites & providing Action Insights. These will be used for personal trading/investing purposes by the experienced person. Website is not accountable for any loss incurred unless you shared the profit with us.
           </p>
         </div>
       </footer>
