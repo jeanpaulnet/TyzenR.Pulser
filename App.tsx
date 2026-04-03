@@ -5,9 +5,27 @@ import { INITIAL_ASSETS } from './constants';
 import { pulser } from './services/pulserAgent';
 import MarketCard from './components/MarketCard';
 import AddAssetModal from './components/AddAssetModal';
-import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp } from 'lucide-react';
+import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User } from 'lucide-react';
+import { jwtDecode } from 'jwt-decode';
+
+declare global {
+  interface Window {
+    google: any;
+  }
+}
+
+interface UserProfile {
+  email: string;
+  name: string;
+  picture: string;
+}
 
 const App: React.FC = () => {
+  const [user, setUser] = useState<UserProfile | null>(() => {
+    const saved = localStorage.getItem('pulser_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
   const [state, setState] = useState<AppState>(() => {
     const saved = localStorage.getItem('pulser_state');
     if (saved) {
@@ -25,6 +43,7 @@ const App: React.FC = () => {
   });
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
 
@@ -32,6 +51,89 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('pulser_state', JSON.stringify(state));
   }, [state]);
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('pulser_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('pulser_user');
+    }
+  }, [user]);
+
+  // Google Login Initialization
+  useEffect(() => {
+    const handleCredentialResponse = async (response: any) => {
+      try {
+        const decoded: any = jwtDecode(response.credential);
+        const profile: UserProfile = {
+          email: decoded.email,
+          name: decoded.name,
+          picture: decoded.picture,
+        };
+        setUser(profile);
+        setIsLoginModalOpen(false);
+
+        // Send post message to the requested endpoint
+        try {
+          await fetch(`https://webapi.tyzenr.com/track`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              app: 'pulser', 
+              action: 'login', 
+              email: profile.email 
+            })
+          });
+        } catch (err) {
+          console.error('Failed to sync login:', err);
+        }
+      } catch (err) {
+        console.error('Login failed:', err);
+      }
+    };
+
+    const initGoogle = () => {
+      if (window.google) {
+        window.google.accounts.id.initialize({
+          client_id: "875002260614-gj79e389kmlespuqtnm52hf8rfnv4k8i.apps.googleusercontent.com",
+          callback: handleCredentialResponse,
+        });
+      }
+    };
+
+    // Check if script is loaded, if not wait a bit
+    if (window.google) {
+      initGoogle();
+    } else {
+      const interval = setInterval(() => {
+        if (window.google) {
+          initGoogle();
+          clearInterval(interval);
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, []);
+
+  const handleLoginClick = () => {
+    if (window.google) {
+      window.google.accounts.id.prompt();
+      // Also render the button in the modal
+      const btn = document.getElementById('google-login-btn');
+      if (btn) {
+        window.google.accounts.id.renderButton(btn, { theme: 'outline', size: 'large' });
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (isLoginModalOpen && window.google) {
+      const btn = document.getElementById('google-login-btn');
+      if (btn) {
+        window.google.accounts.id.renderButton(btn, { theme: 'outline', size: 'large', width: 280 });
+      }
+    }
+  }, [isLoginModalOpen]);
 
   const handleAnalyze = useCallback(async (asset: MarketAsset) => {
     setState(prev => ({
@@ -74,6 +176,10 @@ const App: React.FC = () => {
   };
 
   const handleAddAsset = (asset: MarketAsset) => {
+    if (state.assets.length >= 2 && !user) {
+      setIsLoginModalOpen(true);
+      return;
+    }
     setState(prev => ({
       ...prev,
       assets: [...prev.assets, asset]
@@ -119,6 +225,26 @@ const App: React.FC = () => {
               <ShieldCheck className="w-4 h-4 text-emerald-500" />
               <span className="text-xs font-medium text-slate-300">Engine Active</span>
             </div>
+
+            {user ? (
+              <div className="flex items-center gap-3 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-full">
+                <img src={user.picture} alt={user.name} className="w-6 h-6 rounded-full border border-emerald-500/30" />
+                <span className="text-xs font-bold text-slate-200 hidden sm:inline">{user.name.split(' ')[0]}</span>
+                <button 
+                  onClick={() => { setUser(null); localStorage.removeItem('pulser_user'); }}
+                  className="text-[10px] font-bold text-slate-500 hover:text-rose-400 uppercase tracking-widest ml-1"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setIsLoginModalOpen(true)}
+                className="flex items-center gap-2 bg-slate-900 border border-slate-800 text-slate-300 px-4 py-2 rounded-full font-bold text-xs hover:bg-slate-800 transition-all"
+              >
+                <LogIn className="w-4 h-4" /> Login
+              </button>
+            )}
 
             <button 
               onClick={handleScanAll}
@@ -218,6 +344,34 @@ const App: React.FC = () => {
           onAdd={handleAddAsset} 
           onClose={() => setIsAddModalOpen(false)} 
         />
+      )}
+
+      {isLoginModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="text-center space-y-6">
+              <div className="bg-emerald-500/10 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto">
+                <User className="w-8 h-8 text-emerald-500" />
+              </div>
+              
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-white">Login Required</h2>
+                <p className="text-sm text-slate-400">
+                  You can track up to 2 assets for free. Login with Google to unlock unlimited tracking and advanced AI insights.
+                </p>
+              </div>
+
+              <div id="google-login-btn" className="flex justify-center py-4"></div>
+
+              <button 
+                onClick={() => setIsLoginModalOpen(false)}
+                className="text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors"
+              >
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
