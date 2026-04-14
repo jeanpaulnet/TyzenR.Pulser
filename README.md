@@ -1,6 +1,7 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+
+<a href="https://pulser.tyzenr.com/">
+<img width="1285" height="602" alt="image" src="https://github.com/user-attachments/assets/133895e8-77d7-4087-bd5f-87c916a5cb53" />
+</a>
 
 # Run and deploy your AI Studio app
 
