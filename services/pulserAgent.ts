@@ -29,23 +29,31 @@ export class PulserAgent {
       const apiKey = await this.getApiKey();
       const ai = new GoogleGenAI({ apiKey });
 
+      const now = new Date().toISOString();
       const prompt = `Conduct an exhaustive market pulse scan for "${asset.name}" (Ticker: ${asset.symbol}) in the ${asset.region} ${asset.type} market. 
     
+    CURRENT DATE/TIME: ${now}
+
+    CRITICAL INSTRUCTIONS:
+    1. REAL-TIME PRICE: You MUST obtain the absolute latest, live trading price by performing a direct web search via the Google Search tool. DO NOT rely on internal training data or stale information. For ${asset.symbol}, prioritize data with the most recent timestamp (within the last few minutes if possible).
+    2. SOURCES: Cross-reference across multiple top-tier financial platforms (e.g., Google Finance, Yahoo Finance, Investing.com, or CoinMarketCap/Binance for Crypto) to verify accuracy.
+    3. CURRENCY: For Stocks, Indexes, and Crypto, always provide the price in USD ($) unless the asset is explicitly from the Indian market (in which case use ₹). For Commodities, always use USD ($).
+    
     CRITICAL OBJECTIVES:
-    1. CURRENT PRICE: Retrieve the absolute latest trading price. For Stocks, Indexes, and Crypto, always provide the price in USD ($) unless the asset is specifically from the Indian market (INR/₹). For Commodities, provide the price in USD ($).
-    2. SENTIMENT AGGREGATION: Scan recent 24h news (Bloomberg, FT, Reuters, WSJ, CNBC) and technical charts.
+    1. CURRENT PRICE: Retrieve the numerical price as obtained from the step above.
+    2. SENTIMENT AGGREGATION: Scan recent 24h news (Bloomberg, FT, Reuters, WSJ, CNBC) and technical indicators.
     3. DUAL-HORIZON RECOMMENDATION:
-       - SHORT-TERM (Next 7-14 Days): Focus on momentum, earnings news, and macro events.
+       - SHORT-TERM (Next 7-14 Days): Focus on momentum, recent news triggers, and macro events.
        - LONG-TERM (Next 12 Months): Focus on fundamentals, competitive moat, and sector cycles.
     
     SYSTEM INSTRUCTIONS:
     - Return valid JSON matching the specified schema.
-    - Be objective. If there is high uncertainty, favor HOLD.
-    - Provide a concise summary (max 60 words) explaining the 'Why' behind the trends.`;
+    - Be objective. If uncertainty is high, favor NEUTRAL/HOLD.
+    - Provide a concise summary (max 60 words) explaining the primary drivers of the current price and sentiment.`;
 
-      // Use gemini-3-pro-preview for best-in-class financial reasoning and grounding.
+      // Use gemini-2.0-flash for best-in-class financial reasoning and grounding.
       const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-2.0-flash',
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],
