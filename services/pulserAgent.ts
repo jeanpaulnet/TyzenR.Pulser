@@ -51,9 +51,9 @@ export class PulserAgent {
     - Be objective. If uncertainty is high, favor NEUTRAL/HOLD.
     - Provide a concise summary (max 60 words) explaining the primary drivers of the current price and sentiment.`;
 
-      // Use gemini-2.0-flash for best-in-class financial reasoning and grounding.
+      // Use gemini-3.1-pro-preview for best-in-class financial reasoning and grounding.
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3.1-pro-preview',
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],
