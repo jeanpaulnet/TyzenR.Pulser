@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { MarketAsset, Sentiment, PulserAnalysis } from "../types";
+import { MarketSymbol, Sentiment, PulserAnalysis } from "../types";
 
 export class PulserAgent {
   private cachedApiKey: string | null = null;
@@ -24,18 +24,18 @@ export class PulserAgent {
   /**
    * Analyzes market sentiment (Short & Long Term) using search-grounded AI.
    */
-  async analyzeAsset(asset: MarketAsset): Promise<PulserAnalysis> {
+  async analyzeSymbol(symbol: MarketSymbol): Promise<PulserAnalysis> {
     try {
       const apiKey = await this.getApiKey();
       const ai = new GoogleGenAI({ apiKey });
 
       const now = new Date().toISOString();
-      const prompt = `Conduct an exhaustive market pulse scan for "${asset.name}" (Ticker: ${asset.symbol}) in the ${asset.region} ${asset.type} market. 
+      const prompt = `Conduct an exhaustive market pulse scan for "${symbol.name}" (Ticker: ${symbol.symbol}) in the ${symbol.region} ${symbol.type} market. 
     
     CURRENT DATE/TIME: ${now}
 
     CRITICAL INSTRUCTIONS:
-    1. REAL-TIME PRICE: You MUST obtain the absolute latest, live trading price by performing a direct web search via the Google Search tool. DO NOT rely on internal training data or stale information. For ${asset.symbol}, prioritize data with the most recent timestamp (within the last few minutes if possible).
+    1. REAL-TIME PRICE: You MUST obtain the absolute latest, live trading price by performing a direct web search via the Google Search tool. DO NOT rely on internal training data or stale information. For ${symbol.symbol}, prioritize data with the most recent timestamp (within the last few minutes if possible).
     2. SOURCES: Cross-reference across multiple top-tier financial platforms (e.g., Google Finance, Yahoo Finance, Investing.com, or CoinMarketCap/Binance for Crypto) to verify accuracy.
     3. CURRENCY: For Stocks, Indexes, and Crypto, always provide the price in USD ($) unless the asset is explicitly from the Indian market (in which case use ₹). For Commodities, always use USD ($).
     
@@ -112,7 +112,7 @@ export class PulserAgent {
         .slice(0, 5) || [];
 
       return {
-        assetId: asset.id,
+        symbolId: symbol.id,
         shortTermTrend: (result.shortTermTrend?.toUpperCase() as Sentiment) || Sentiment.NEUTRAL,
         longTermTrend: (result.longTermTrend?.toUpperCase() as Sentiment) || Sentiment.NEUTRAL,
         confidenceScore: result.confidenceScore || 50,
@@ -129,9 +129,9 @@ export class PulserAgent {
         throw error;
       }
       
-      console.error(`Intelligence Error [${asset.symbol}]:`, error);
+      console.error(`Intelligence Error [${symbol.symbol}]:`, error);
       return {
-        assetId: asset.id,
+        symbolId: symbol.id,
         shortTermTrend: Sentiment.NEUTRAL,
         longTermTrend: Sentiment.NEUTRAL,
         confidenceScore: 0,

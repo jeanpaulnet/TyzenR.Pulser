@@ -13,7 +13,7 @@ export enum Sentiment {
   NEUTRAL = 'NEUTRAL'
 }
 
-export interface MarketAsset {
+export interface MarketSymbol {
   id: string;
   symbol: string;
   name: string;
@@ -22,7 +22,7 @@ export interface MarketAsset {
 }
 
 export interface PulserAnalysis {
-  assetId: string;
+  symbolId: string;
   shortTermTrend: Sentiment;
   longTermTrend: Sentiment;
   confidenceScore: number; // 0-100
@@ -35,6 +35,6 @@ export interface PulserAnalysis {
 }
 
 export interface AppState {
-  assets: MarketAsset[];
+  symbols: MarketSymbol[];
   analyses: Record<string, PulserAnalysis>;
 }

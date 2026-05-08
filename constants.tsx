@@ -1,9 +1,9 @@
 
-import { MarketAsset, MarketType } from './types';
+import { MarketSymbol, MarketType } from './types';
 
 export const APP_URL = 'https://futurecaps.buzz';
 
-export const INITIAL_ASSETS: MarketAsset[] = [
+export const INITIAL_SYMBOLS: MarketSymbol[] = [
   { id: '0', symbol: 'NIFTY', name: 'NIFTY 50', type: MarketType.INDEX, region: 'INDIA' },
   { id: '1', symbol: 'NIFTY_PE', name: 'NIFTY PE Ratio', type: MarketType.INDEX, region: 'INDIA' },
 ];

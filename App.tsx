@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { MarketAsset, AppState, PulserAnalysis, MarketType } from './types';
-import { INITIAL_ASSETS } from './constants';
+import { MarketSymbol, AppState, PulserAnalysis, MarketType } from './types';
+import { INITIAL_SYMBOLS } from './constants';
 import { pulser } from './services/pulserAgent';
 import MarketCard from './components/MarketCard';
-import AddAssetModal from './components/AddAssetModal';
+import AddSymbolModal from './components/AddAssetModal';
 import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode';
 
@@ -58,14 +58,14 @@ const App: React.FC = () => {
       try {
         const parsed = JSON.parse(saved);
         return {
-          assets: parsed.assets || INITIAL_ASSETS,
+          symbols: parsed.symbols || parsed.assets || INITIAL_SYMBOLS,
           analyses: parsed.analyses || {},
         };
       } catch (e) {
-        return { assets: INITIAL_ASSETS, analyses: {} };
+        return { symbols: INITIAL_SYMBOLS, analyses: {} };
       }
     }
-    return { assets: INITIAL_ASSETS, analyses: {} };
+    return { symbols: INITIAL_SYMBOLS, analyses: {} };
   });
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -161,32 +161,32 @@ const App: React.FC = () => {
     }
   }, [isLoginModalOpen]);
 
-  const handleAnalyze = useCallback(async (asset: MarketAsset) => {
+  const handleAnalyze = useCallback(async (symbol: MarketSymbol) => {
     setState(prev => ({
       ...prev,
       analyses: {
         ...prev.analyses,
-        [asset.id]: { ...(prev.analyses[asset.id] || {}), isAnalyzing: true } as PulserAnalysis
+        [symbol.id]: { ...(prev.analyses[symbol.id] || {}), isAnalyzing: true } as PulserAnalysis
       }
     }));
 
     try {
-      const result = await pulser.analyzeAsset(asset);
+      const result = await pulser.analyzeSymbol(symbol);
       setState(prev => ({
         ...prev,
         analyses: {
           ...prev.analyses,
-          [asset.id]: result
+          [symbol.id]: result
         }
       }));
     } catch (error: any) {
-      console.error(`Analysis failed for ${asset.symbol}:`, error);
+      console.error(`Analysis failed for ${symbol.symbol}:`, error);
       setState(prev => ({
         ...prev,
         analyses: {
           ...prev.analyses,
-          [asset.id]: { 
-            ...(prev.analyses[asset.id] || {}), 
+          [symbol.id]: { 
+            ...(prev.analyses[symbol.id] || {}), 
             isAnalyzing: false,
             summary: "Market connection pulse failed. Please verify engine connectivity."
           } as PulserAnalysis
@@ -196,38 +196,38 @@ const App: React.FC = () => {
   }, []);
 
   const handleScanAll = async () => {
-    for (const asset of state.assets) {
-      await handleAnalyze(asset);
+    for (const symbol of state.symbols) {
+      await handleAnalyze(symbol);
     }
   };
 
-  const handleAddAsset = (asset: MarketAsset) => {
-    if (state.assets.length >= 2 && !user) {
+  const handleAddSymbol = (symbol: MarketSymbol) => {
+    if (state.symbols.length >= 2 && !user) {
       setIsLoginModalOpen(true);
       return;
     }
     setState(prev => ({
       ...prev,
-      assets: [...prev.assets, asset]
+      symbols: [...prev.symbols, symbol]
     }));
-    handleAnalyze(asset);
+    handleAnalyze(symbol);
   };
 
-  const handleRemoveAsset = (id: string) => {
+  const handleRemoveSymbol = (id: string) => {
     setState(prev => {
       const newAnalyses = { ...prev.analyses };
       delete newAnalyses[id];
       return {
-        assets: prev.assets.filter(a => a.id !== id),
+        symbols: prev.symbols.filter(s => s.id !== id),
         analyses: newAnalyses
       };
     });
   };
 
-  const filteredAssets = state.assets.filter(asset => {
-    const matchesSearch = asset.symbol.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         asset.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = filterType === 'ALL' || asset.type === filterType;
+  const filteredSymbols = state.symbols.filter(symbol => {
+    const matchesSearch = symbol.symbol.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         symbol.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = filterType === 'ALL' || symbol.type === filterType;
     return matchesSearch && matchesType;
   });
 
@@ -238,7 +238,7 @@ const App: React.FC = () => {
   return (
     <div className={`min-h-screen flex flex-col selection:bg-emerald-500/30 transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
       {/* Header */}
-      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${theme === 'dark' ? 'bg-slate-950/80 border-slate-800' : 'bg-gradient-to-r from-purple-600 to-indigo-700 border-purple-500'}`}>
+      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${theme === 'dark' ? 'bg-gradient-to-r from-slate-800 to-slate-950 border-slate-800' : 'bg-gradient-to-r from-purple-600 to-indigo-700 border-purple-500'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-white/20 p-2 rounded-xl shadow-lg backdrop-blur-sm">
@@ -311,7 +311,7 @@ const App: React.FC = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <input 
               type="text" 
-              placeholder="Search assets..."
+              placeholder="Search symbols..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full border rounded-2xl pl-12 pr-4 py-3 transition-all placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}
@@ -337,33 +337,33 @@ const App: React.FC = () => {
               onClick={() => setIsAddModalOpen(true)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-bold text-xs transition-all whitespace-nowrap shadow-lg ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 border-blue-500 shadow-blue-600/20 text-white' : 'bg-indigo-600 hover:bg-indigo-700 border-indigo-500 shadow-indigo-600/20 text-white'}`}
             >
-              <Plus className="w-4 h-4" /> Add Asset
+              <Plus className="w-4 h-4" /> Add Symbol
             </button>
           </div>
         </div>
 
         {/* Dashboard Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredAssets.map(asset => (
+          {filteredSymbols.map(symbol => (
             <MarketCard 
-              key={asset.id}
-              asset={asset}
-              analysis={state.analyses[asset.id]}
+              key={symbol.id}
+              symbol={symbol}
+              analysis={state.analyses[symbol.id]}
               onRefresh={handleAnalyze}
-              onRemove={handleRemoveAsset}
+              onRemove={handleRemoveSymbol}
             />
           ))}
 
-          {filteredAssets.length === 0 && (
+          {filteredSymbols.length === 0 && (
             <div className={`col-span-full py-24 flex flex-col items-center justify-center rounded-[3rem] border border-dashed ${theme === 'dark' ? 'text-slate-500 bg-slate-900/30 border-slate-800' : 'text-slate-400 bg-slate-100/50 border-slate-200'}`}>
               <Globe className="w-16 h-16 mb-6 opacity-10" />
               <p className={`text-xl font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Market Silence</p>
-              <p className="text-sm max-w-xs text-center mt-2 text-slate-500">No assets matching your search. Add a new ticker symbol to start the pulse scan.</p>
+              <p className="text-sm max-w-xs text-center mt-2 text-slate-500">No symbols matching your search. Add a new ticker symbol to start the pulse scan.</p>
               <button 
                 onClick={() => setIsAddModalOpen(true)}
                 className="mt-8 bg-blue-500/10 text-blue-500 border border-blue-500/20 px-6 py-2 rounded-full font-bold hover:bg-blue-500 hover:text-white transition-all"
               >
-                Track New Asset
+                Track New Symbol
               </button>
             </div>
           )}
@@ -380,8 +380,8 @@ const App: React.FC = () => {
       </footer>
 
       {isAddModalOpen && (
-        <AddAssetModal 
-          onAdd={handleAddAsset} 
+        <AddSymbolModal 
+          onAdd={handleAddSymbol} 
           onClose={() => setIsAddModalOpen(false)} 
         />
       )}
@@ -397,7 +397,7 @@ const App: React.FC = () => {
               <div className="space-y-2">
                 <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Login Required</h2>
                 <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                  You can track up to 2 assets for free. Login with Google to unlock unlimited tracking and advanced AI insights.
+                  You can track up to 2 symbols for free. Login with Google to unlock unlimited tracking and advanced AI insights.
                 </p>
               </div>
 
