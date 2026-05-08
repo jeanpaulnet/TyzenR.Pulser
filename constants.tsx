@@ -9,8 +9,8 @@ export const INITIAL_ASSETS: MarketAsset[] = [
 ];
 
 export const SENTIMENT_COLORS = {
-  BUY: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
-  SELL: 'text-rose-400 bg-rose-400/10 border-rose-400/20',
-  HOLD: 'text-amber-400 bg-amber-400/10 border-amber-400/20',
-  NEUTRAL: 'text-slate-400 bg-slate-400/10 border-slate-400/20',
+  BUY: 'text-emerald-700 dark:text-emerald-400 bg-emerald-500/30 dark:bg-emerald-500/40 border-emerald-500/40 dark:border-emerald-500/30 font-extrabold',
+  SELL: 'text-rose-700 dark:text-rose-400 bg-rose-500/30 dark:bg-rose-500/40 border-rose-500/40 dark:border-rose-500/30 font-extrabold',
+  HOLD: 'text-amber-700 dark:text-amber-400 bg-amber-500/30 dark:bg-amber-500/40 border-amber-500/40 dark:border-amber-500/30 font-extrabold',
+  NEUTRAL: 'text-slate-700 dark:text-slate-400 bg-slate-500/30 dark:bg-slate-500/40 border-slate-500/40 dark:border-slate-500/30 font-extrabold',
 };
