@@ -36,7 +36,7 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
   );
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/60 rounded-[2rem] hover:border-purple-400 dark:hover:border-slate-700 transition-all group relative overflow-hidden backdrop-blur-sm shadow-sm dark:shadow-none flex flex-col">
+    <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] hover:border-purple-400 dark:hover:border-slate-600 transition-all group relative overflow-hidden backdrop-blur-sm shadow-sm dark:shadow-none flex flex-col">
       {/* Header Area */}
       <div className="bg-gradient-to-br from-purple-600 to-indigo-700 dark:from-slate-800 dark:to-slate-900 px-6 py-5 relative border-b dark:border-slate-800/40">
         {/* Live Indicator */}
@@ -128,7 +128,7 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
                       href={source.uri} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-[9px] font-bold text-slate-600 dark:text-slate-500 hover:text-purple-600 dark:hover:text-emerald-400 transition-colors bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-1.5 rounded-lg"
+                      className="flex items-center gap-1 text-[9px] font-bold text-slate-600 dark:text-slate-500 hover:text-purple-600 dark:hover:text-emerald-400 transition-colors bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-1.5 rounded-lg"
                     >
                       {(source.title?.length || 0) > 15 ? source.title.substring(0, 15) + '...' : source.title}
                       <ExternalLink className="w-2 h-2 opacity-50" />
@@ -156,7 +156,7 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
             )}
           </div>
         ) : (
-          <div className="h-44 flex flex-col items-center justify-center space-y-4 border border-dashed rounded-3xl bg-slate-900/10 transition-colors duration-300 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-800 dark:bg-slate-950">
+          <div className="h-44 flex flex-col items-center justify-center space-y-4 border border-dashed rounded-3xl bg-white/50 dark:bg-slate-950 transition-colors duration-300 text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-800">
             <div className="relative">
               <RefreshCw className={`w-8 h-8 animate-spin bg-gradient-to-r from-rose-500 via-amber-500 to-emerald-500 bg-clip-text text-transparent`} />
               <div className="absolute inset-0 bg-gradient-to-r from-rose-500/20 via-amber-500/20 to-emerald-500/20 blur-xl rounded-full animate-pulse" />
