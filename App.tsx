@@ -29,7 +29,7 @@ const App: React.FC = () => {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('pulser_theme');
     if (saved) return saved as 'light' | 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'light';
   });
 
   useEffect(() => {
@@ -163,7 +163,38 @@ const App: React.FC = () => {
     }
   }, [isLoginModalOpen]);
 
-  const handleAnalyze = useCallback(async (symbol: MarketSymbol) => {
+  // Poll for live prices every minute
+  useEffect(() => {
+    const intervalId = setInterval(async () => {
+      // Only poll if we have symbols and we're not currently scanning all
+      if (state.symbols.length === 0) return;
+
+      for (const symbol of state.symbols) {
+        try {
+          const { price } = await pulser.getLivePrice(symbol);
+          if (price && state.analyses[symbol.id]) {
+            setState(prev => ({
+              ...prev,
+              analyses: {
+                ...prev.analyses,
+                [symbol.id]: {
+                  ...prev.analyses[symbol.id],
+                  currentPrice: price,
+                } as PulserAnalysis
+              }
+            }));
+          }
+        } catch (error) {
+          // Silently fail for background price updates
+          console.debug(`Background price update failed for ${symbol.symbol}`);
+        }
+      }
+    }, 60000); // Check every minute (backend handles the 5-min cache)
+
+    return () => clearInterval(intervalId);
+  }, [state.symbols, state.analyses]);
+
+  const handleAnalyze = useCallback(async (symbol: MarketSymbol, forceRefresh = false) => {
     setState(prev => ({
       ...prev,
       analyses: {
@@ -173,7 +204,7 @@ const App: React.FC = () => {
     }));
 
     try {
-      const result = await pulser.analyzeSymbol(symbol);
+      const result = await pulser.analyzeSymbol(symbol, forceRefresh);
       setState(prev => ({
         ...prev,
         analyses: {
@@ -351,7 +382,7 @@ const App: React.FC = () => {
               key={symbol.id}
               symbol={symbol}
               analysis={state.analyses[symbol.id]}
-              onRefresh={handleAnalyze}
+              onRefresh={(s) => handleAnalyze(s, true)}
               onRemove={handleRemoveSymbol}
             />
           ))}

@@ -37,10 +37,28 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
     </div>
   );
 
+  const getHeaderGradient = () => {
+    switch (marketSymbol.type) {
+      case 'CRYPTO':
+        return 'from-purple-600 to-indigo-700 dark:from-indigo-900 dark:to-slate-900';
+      case 'COMMODITY':
+        return 'from-emerald-600 to-teal-700 dark:from-emerald-900 dark:to-slate-900';
+      case 'INDEX':
+        return 'from-slate-700 to-slate-900 dark:from-slate-900 dark:to-black';
+      case 'STOCK':
+        if (marketSymbol.region === 'INDIA') {
+          return 'from-orange-500 to-amber-600 dark:from-orange-950 dark:to-slate-900';
+        }
+        return 'from-blue-600 to-indigo-700 dark:from-blue-950 dark:to-slate-900';
+      default:
+        return 'from-purple-600 to-indigo-700 dark:from-slate-800 dark:to-slate-900';
+    }
+  };
+
   return (
     <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] hover:border-purple-400 dark:hover:border-slate-600 transition-all group relative overflow-hidden backdrop-blur-sm shadow-sm dark:shadow-none flex flex-col">
       {/* Header Area */}
-      <div className="bg-gradient-to-br from-purple-600 to-indigo-700 dark:from-slate-800 dark:to-slate-900 px-6 py-5 relative border-b dark:border-slate-800/40">
+      <div className={`bg-gradient-to-br ${getHeaderGradient()} px-6 py-5 relative border-b dark:border-slate-800/40`}>
         {/* Live Indicator */}
         {analysis?.currentPrice && !isAnalyzing && (
           <div className="absolute top-0 right-0 p-2">

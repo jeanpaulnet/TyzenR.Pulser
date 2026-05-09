@@ -12,15 +12,20 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose }) => {
   const [symbol, setSymbol] = useState('');
   const [type, setType] = useState<MarketType>(MarketType.STOCK);
   const [region, setRegion] = useState<'US' | 'INDIA' | 'GLOBAL'>('US');
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!symbol) return;
+    if (!symbol.trim()) {
+      setError('Please enter a valid symbol (e.g., AAPL or RELIANCE.NS)');
+      return;
+    }
 
+    setError(null);
     onAdd({
       id: Date.now().toString(),
-      symbol: symbol.toUpperCase(),
-      name: symbol.toUpperCase(),
+      symbol: symbol.trim().toUpperCase(),
+      name: symbol.trim().toUpperCase(),
       type,
       region
     });
@@ -51,6 +56,11 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose }) => {
                 onChange={(e) => setSymbol(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
               />
+              {error && (
+                <p className="text-[10px] text-rose-500 font-bold mt-1.5 animate-in fade-in slide-in-from-top-1">
+                  {error}
+                </p>
+              )}
               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Use .NS for NSE India (e.g. RELIANCE.NS)</p>
             </div>
 

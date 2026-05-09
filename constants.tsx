@@ -4,8 +4,14 @@ import { MarketSymbol, MarketType } from './types';
 export const APP_URL = 'https://futurecaps.buzz';
 
 export const INITIAL_SYMBOLS: MarketSymbol[] = [
-  { id: '0', symbol: 'NIFTY', name: 'NIFTY 50', type: MarketType.INDEX, region: 'INDIA' },
-  { id: '1', symbol: 'NIFTY_PE', name: 'NIFTY PE Ratio', type: MarketType.INDEX, region: 'INDIA' },
+  { id: 'nvda', symbol: 'NVDA', name: 'NVIDIA Corp', type: MarketType.STOCK, region: 'US' },
+  { id: 'aapl', symbol: 'AAPL', name: 'Apple Inc', type: MarketType.STOCK, region: 'US' },
+  { id: 'nifty', symbol: 'NIFTY', name: 'NIFTY 50', type: MarketType.INDEX, region: 'INDIA' },
+  { id: 'reliance', symbol: 'RELIANCE.NS', name: 'Reliance Industries', type: MarketType.STOCK, region: 'INDIA' },
+  { id: 'gold', symbol: 'GOLD', name: 'Gold Spot', type: MarketType.COMMODITY, region: 'US' },
+  { id: 'silver', symbol: 'SILVER', name: 'Silver Spot', type: MarketType.COMMODITY, region: 'US' },
+  { id: 'btc', symbol: 'BTC', name: 'Bitcoin', type: MarketType.CRYPTO, region: 'US' },
+  { id: 'eth', symbol: 'ETH', name: 'Ethereum', type: MarketType.CRYPTO, region: 'US' },
 ];
 
 export const SENTIMENT_COLORS = {

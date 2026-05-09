@@ -176,7 +176,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                       {snapshot?.technicalCommentary || '"Technical data pending fresh pulse scan."'}
                     </p>
                     <a 
-                      href={`https://www.tradingview.com/symbols/${symbol.region === 'INDIA' ? 'NSE' : (symbol.type === 'CRYPTO' ? 'BINANCE' : 'NASDAQ')}:${symbol.symbol.replace('.NS', '')}/technicals/`}
+                      href={`https://www.tradingview.com/symbols/${symbol.region === 'INDIA' ? 'NSE' : (symbol.type === 'CRYPTO' ? 'BINANCE' : 'NASDAQ')}:${symbol.symbol.split(/[.\-]/)[0]}/technicals/`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex w-full items-center justify-center gap-2 py-2.5 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20"
@@ -191,7 +191,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
             {/* Column 2 */}
             <div className="space-y-6">
               {/* Growth Chart with bars */}
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-full lg:min-h-[400px]">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-auto lg:min-h-[250px]">
                 <div className="flex justify-between items-center mb-6">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-500/10 rounded-xl text-blue-500">
@@ -202,7 +202,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                   <span className="text-[10px] font-black text-slate-400 uppercase">REVENUE (BILLIONS {symbol.region === 'INDIA' ? '₹' : '$'})</span>
                 </div>
                 
-                <div className="flex-1 w-full min-h-[250px]">
+                <div className="flex-1 w-full min-h-[150px]">
                   {growthData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <ReChartsBarChart data={growthData}>
@@ -267,16 +267,16 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
 
             {/* Column 3 */}
             <div className="space-y-6">
-              {/* About Company */}
+              {/* About Section */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-slate-500/10 rounded-xl text-slate-500">
                     <Info className="w-4 h-4" />
                   </div>
-                  <h3 className="font-bold text-slate-800 dark:text-slate-200">About Company</h3>
+                  <h3 className="font-bold text-slate-800 dark:text-slate-200 capitalize">About {symbol.type.charAt(0) + symbol.type.slice(1).toLowerCase()}</h3>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  {snapshot?.about || `${symbol.name} is a market asset being tracked for pulse sentiment. Background data pending update.`}
+                  {snapshot?.about || `${symbol.name} is an asset being tracked for pulse sentiment. Background data pending update.`}
                 </p>
                 <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2">
                    <div>
