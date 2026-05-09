@@ -32,6 +32,22 @@ export interface PulserAnalysis {
   isAnalyzing: boolean;
   currentPrice?: string;
   currencySymbol?: string;
+  // Snapshot Data
+  snapshot?: {
+    intrinsicValue?: string;
+    roe?: string;
+    debtToEquity?: string;
+    marginOfSafety?: string;
+    ma200?: string;
+    rsi?: string;
+    technicalCommentary?: string;
+    growthData?: { year: string; revenue: number; growth: number }[];
+    expansionPlans?: string[];
+    about?: string;
+    founded?: string;
+    employees?: string;
+    peers?: { name: string; pe: string; marketCap: string }[];
+  };
 }
 
 export interface AppState {

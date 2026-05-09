@@ -121,8 +121,10 @@ const App: React.FC = () => {
     const initGoogle = () => {
       if (window.google) {
         window.google.accounts.id.initialize({
-          client_id: "875002260614-gj79e389kmlespuqtnm52hf8rfnv4k8i.apps.googleusercontent.com",
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "875002260614-gj79e389kmlespuqtnm52hf8rfnv4k8i.apps.googleusercontent.com",
           callback: handleCredentialResponse,
+          ux_mode: "popup",
+          auto_select: false
         });
       }
     };

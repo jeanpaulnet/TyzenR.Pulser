@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { MarketSymbol, MarketType, PulserAnalysis, Sentiment } from '../types';
 import { SENTIMENT_COLORS } from '../constants';
-import { TrendingUp, TrendingDown, Minus, RefreshCw, ExternalLink, AlertCircle, Clock, Calendar, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, RefreshCw, ExternalLink, AlertCircle, Clock, Calendar, BarChart3, Fingerprint } from 'lucide-react';
+import SnapshotModal from './SnapshotModal';
 
 interface MarketCardProps {
   symbol: MarketSymbol;
@@ -12,6 +13,7 @@ interface MarketCardProps {
 }
 
 const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis, onRefresh, onRemove }) => {
+  const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
   const isAnalyzing = analysis?.isAnalyzing;
 
   const getSentimentIcon = (rec: Sentiment) => {
@@ -140,15 +142,13 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
             
             {analysis.lastUpdated && (
               <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-100 dark:border-slate-800">
-                 <a 
-                   href={`https://www.tradingview.com/symbols/${marketSymbol.region === 'INDIA' ? 'NSE' : (marketSymbol.type === MarketType.CRYPTO ? 'BINANCE' : 'NASDAQ')}-${marketSymbol.symbol.replace('.NS', '')}${marketSymbol.type === MarketType.CRYPTO && !marketSymbol.symbol.includes('USD') && !marketSymbol.symbol.includes('USDT') ? 'USDT' : ''}/technicals/`}
-                   target="_blank"
-                   rel="noopener noreferrer"
-                   className="flex items-center gap-1.5 text-[9px] font-bold text-indigo-600 dark:text-emerald-400 hover:text-indigo-700 dark:hover:text-emerald-300 transition-colors bg-indigo-500/10 dark:bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-indigo-200 dark:border-emerald-500/20"
+                 <button 
+                   onClick={() => setIsSnapshotOpen(true)}
+                   className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors bg-emerald-500/10 dark:bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-500/20"
                  >
-                   <BarChart3 className="w-2.5 h-2.5" />
-                   CHART
-                 </a>
+                   <Fingerprint className="w-2.5 h-2.5" />
+                   SNAPSHOT: {marketSymbol.symbol.replace('.NS', '')}
+                 </button>
                  <div className="text-[9px] text-slate-500 dark:text-slate-600 font-bold">
                     SYNCED: {new Date(analysis.lastUpdated).toLocaleTimeString()}
                  </div>
@@ -170,6 +170,13 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
           </div>
         )}
       </div>
+      {isSnapshotOpen && (
+        <SnapshotModal 
+          symbol={marketSymbol}
+          analysis={analysis}
+          onClose={() => setIsSnapshotOpen(false)}
+        />
+      )}
     </div>
   );
 };

@@ -45,6 +45,12 @@ export class PulserAgent {
     3. DUAL-HORIZON RECOMMENDATION:
        - SHORT-TERM (Next 7-14 Days): Focus on momentum, recent news triggers, and macro events.
        - LONG-TERM (Next 12 Months): Focus on fundamentals, competitive moat, and sector cycles.
+    4. SNAPSHOT DEEP-DIVE:
+       - Value Metrics: Intrinsic Value (DCF), ROE, Debt/Equity, and Margin of Safety.
+       - Technicals: 200-Day Moving Average, RSI (14), and a brief technical setup summary.
+       - Growth: Revenue (billions) and Growth (%) for the last 5 periods (years/quarters).
+       - Business: Strategic expansion plans, company background, founding date, and employee scale.
+       - Peers: Top 3 competitors with their current TTM P/E ratios and Market Cap.
     
     SYSTEM INSTRUCTIONS:
     - Return valid JSON matching the specified schema.
@@ -85,8 +91,46 @@ export class PulserAgent {
                 type: Type.STRING,
                 description: "Synthesis of key market drivers."
               },
+              snapshot: {
+                type: Type.OBJECT,
+                properties: {
+                  intrinsicValue: { type: Type.STRING },
+                  roe: { type: Type.STRING },
+                  debtToEquity: { type: Type.STRING },
+                  marginOfSafety: { type: Type.STRING, description: "Valuation assessment (e.g. High, Good, Fair, Low)" },
+                  ma200: { type: Type.STRING, description: "200-day moving average price" },
+                  rsi: { type: Type.STRING, description: "RSI (14) indicator value" },
+                  technicalCommentary: { type: Type.STRING, description: "Brief analysis of technical setup" },
+                  growthData: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        year: { type: Type.STRING },
+                        revenue: { type: Type.NUMBER, description: "Revenue in billions" },
+                        growth: { type: Type.NUMBER, description: "Growth %" }
+                      }
+                    }
+                  },
+                  expansionPlans: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  about: { type: Type.STRING },
+                  founded: { type: Type.STRING },
+                  employees: { type: Type.STRING },
+                  peers: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        name: { type: Type.STRING },
+                        pe: { type: Type.STRING },
+                        marketCap: { type: Type.STRING }
+                      }
+                    }
+                  }
+                }
+              }
             },
-            required: ["shortTermTrend", "longTermTrend", "confidenceScore", "summary", "currentPrice", "currencySymbol"]
+            required: ["shortTermTrend", "longTermTrend", "confidenceScore", "summary", "currentPrice", "currencySymbol", "snapshot"]
           }
         },
       });
@@ -119,6 +163,7 @@ export class PulserAgent {
         summary: result.summary || "Scan complete. Sentiment levels are stable.",
         currentPrice: sanitizedPrice,
         currencySymbol: result.currencySymbol,
+        snapshot: result.snapshot,
         sources: sources,
         lastUpdated: new Date().toISOString(),
         isAnalyzing: false,
