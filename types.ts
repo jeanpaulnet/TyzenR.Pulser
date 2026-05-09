@@ -36,9 +36,16 @@ export interface PulserAnalysis {
   snapshot?: {
     intrinsicValue?: string;
     roe?: string;
+    roce?: string;
+    pbRatio?: string;
+    peRatio?: string;
+    growthRate3Y?: string;
+    growthRate5Y?: string;
     debtToEquity?: string;
     marginOfSafety?: string;
     ma200?: string;
+    ma100?: string;
+    ma50?: string;
     rsi?: string;
     technicalCommentary?: string;
     growthData?: { year: string; revenue: number; growth: number }[];
@@ -47,6 +54,7 @@ export interface PulserAnalysis {
     founded?: string;
     employees?: string;
     peers?: { name: string; pe: string; marketCap: string }[];
+    news?: { title: string; url: string; date: string }[];
   };
 }
 

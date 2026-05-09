@@ -46,11 +46,12 @@ export class PulserAgent {
        - SHORT-TERM (Next 7-14 Days): Focus on momentum, recent news triggers, and macro events.
        - LONG-TERM (Next 12 Months): Focus on fundamentals, competitive moat, and sector cycles.
     4. SNAPSHOT DEEP-DIVE:
-       - Value Metrics: Intrinsic Value (DCF), ROE, Debt/Equity, and Margin of Safety.
-       - Technicals: 200-Day Moving Average, RSI (14), and a brief technical setup summary.
-       - Growth: Revenue (billions) and Growth (%) for the last 5 periods (years/quarters).
+       - Value Metrics: Intrinsic Value (DCF), ROE, ROCE, PE Ratio, PB Ratio, Growth Rate (3Y & 5Y CAGR), Debt/Equity, and Margin of Safety.
+       - Technicals: 200, 100, and 50-Day Moving Averages, RSI (14), and a brief technical setup summary.
+       - Growth: Revenue (billions) and Growth (%) for the last 5 periods (years/quarters), ordered chronologically.
        - Business: Strategic expansion plans, company background, founding date, and employee scale.
        - Peers: Top 3 competitors with their current TTM P/E ratios and Market Cap.
+       - News: 5 latest recent news headlines with their corresponding source URLs.
     
     SYSTEM INSTRUCTIONS:
     - Return valid JSON matching the specified schema.
@@ -96,9 +97,16 @@ export class PulserAgent {
                 properties: {
                   intrinsicValue: { type: Type.STRING },
                   roe: { type: Type.STRING },
+                  roce: { type: Type.STRING },
+                  pbRatio: { type: Type.STRING },
+                  peRatio: { type: Type.STRING },
+                  growthRate3Y: { type: Type.STRING },
+                  growthRate5Y: { type: Type.STRING },
                   debtToEquity: { type: Type.STRING },
                   marginOfSafety: { type: Type.STRING, description: "Valuation assessment (e.g. High, Good, Fair, Low)" },
                   ma200: { type: Type.STRING, description: "200-day moving average price" },
+                  ma100: { type: Type.STRING, description: "100-day moving average price" },
+                  ma50: { type: Type.STRING, description: "50-day moving average price" },
                   rsi: { type: Type.STRING, description: "RSI (14) indicator value" },
                   technicalCommentary: { type: Type.STRING, description: "Brief analysis of technical setup" },
                   growthData: {
@@ -124,6 +132,17 @@ export class PulserAgent {
                         name: { type: Type.STRING },
                         pe: { type: Type.STRING },
                         marketCap: { type: Type.STRING }
+                      }
+                    }
+                  },
+                  news: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        title: { type: Type.STRING },
+                        url: { type: Type.STRING },
+                        date: { type: Type.STRING }
                       }
                     }
                   }

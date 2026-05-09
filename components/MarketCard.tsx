@@ -147,7 +147,7 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
                    className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors bg-emerald-500/10 dark:bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-500/20"
                  >
                    <Fingerprint className="w-2.5 h-2.5" />
-                   SNAPSHOT: {marketSymbol.symbol.replace('.NS', '')}
+                   SNAPSHOT
                  </button>
                  <div className="text-[9px] text-slate-500 dark:text-slate-600 font-bold">
                     SYNCED: {new Date(analysis.lastUpdated).toLocaleTimeString()}
@@ -175,6 +175,7 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
           symbol={marketSymbol}
           analysis={analysis}
           onClose={() => setIsSnapshotOpen(false)}
+          onRefresh={() => onRefresh(marketSymbol)}
         />
       )}
     </div>

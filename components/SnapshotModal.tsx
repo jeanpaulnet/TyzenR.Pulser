@@ -2,20 +2,24 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { MarketSymbol, PulserAnalysis } from '../types';
-import { X, TrendingUp, BarChart, Info, Users, Zap, Search, Activity, Target } from 'lucide-react';
+import { X, TrendingUp, BarChart, Info, Users, Zap, Search, Activity, Target, ExternalLink, Newspaper } from 'lucide-react';
 import { BarChart as ReChartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface SnapshotModalProps {
   symbol: MarketSymbol;
   analysis?: PulserAnalysis;
   onClose: () => void;
+  onRefresh: () => void;
 }
 
-const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose }) => {
+const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose, onRefresh }) => {
   const snapshot = analysis?.snapshot;
 
-  // Fallbacks for data
-  const growthData = snapshot?.growthData || [];
+  // Sort growth data chronologically
+  const growthData = [...(snapshot?.growthData || [])].sort((a, b) => {
+    // Basic sorting for years
+    return a.year.localeCompare(b.year);
+  });
   const peers = snapshot?.peers || [];
   const expansionPlans = snapshot?.expansionPlans || [];
 
@@ -34,14 +38,25 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
             <Search className="w-16 h-16 text-indigo-500 mb-4 opacity-50" />
             <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2">No Deep-Dive Data</h3>
             <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
-              This symbol requires a fresh intelligence pulse to generate a snapshot. Please close this modal and click "Refresh" on the card.
+              This symbol requires a fresh intelligence pulse to generate a comprehensive snapshot.
             </p>
-            <button 
-              onClick={onClose}
-              className="px-8 py-3 bg-indigo-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-indigo-700 transition-all"
-            >
-              Back to Dashboard
-            </button>
+            <div className="flex gap-4">
+              <button 
+                onClick={onClose}
+                className="px-8 py-3 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-slate-300 dark:hover:bg-slate-700 transition-all"
+              >
+                Close
+              </button>
+              <button 
+                onClick={() => {
+                  onRefresh();
+                  onClose();
+                }}
+                className="px-8 py-3 bg-indigo-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
+              >
+                REFRESH NOW
+              </button>
+            </div>
           </div>
         )}
 
@@ -80,26 +95,38 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                   </div>
                   <h3 className="font-bold text-slate-800 dark:text-slate-200">Value Investing</h3>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                    <p className="text-[10px] text-slate-400 uppercase font-black mb-1">Intrinsic Value</p>
-                    <p className="text-lg font-bold text-emerald-500">{snapshot?.intrinsicValue || '—'}</p>
-                    <p className="text-[9px] text-slate-500">Fair Value Estimate</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                    <p className="text-[9px] text-slate-400 uppercase font-black mb-0.5">PE Ratio</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-white">{snapshot?.peRatio || '—'}</p>
                   </div>
-                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                    <p className="text-[10px] text-slate-400 uppercase font-black mb-1">ROE</p>
-                    <p className="text-lg font-bold text-slate-800 dark:text-white">{snapshot?.roe || '—'}</p>
-                    <p className="text-[9px] text-slate-500">Efficiency Ratio</p>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                    <p className="text-[9px] text-slate-400 uppercase font-black mb-0.5">PB Ratio</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-white">{snapshot?.pbRatio || '—'}</p>
                   </div>
-                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                    <p className="text-[10px] text-slate-400 uppercase font-black mb-1">Debt / Equity</p>
-                    <p className="text-lg font-bold text-slate-800 dark:text-white">{snapshot?.debtToEquity || '—'}</p>
-                    <p className="text-[9px] text-emerald-500">Leverage Level</p>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                    <p className="text-[9px] text-slate-400 uppercase font-black mb-0.5">Growth 3Y</p>
+                    <p className="text-sm font-bold text-blue-500">{snapshot?.growthRate3Y || '—'}</p>
                   </div>
-                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                    <p className="text-[10px] text-slate-400 uppercase font-black mb-1">Margin of Safety</p>
-                    <p className="text-lg font-bold text-emerald-500">{snapshot?.marginOfSafety || '—'}</p>
-                    <p className="text-[9px] text-slate-500">Capital Risk Buffer</p>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                    <p className="text-[9px] text-slate-400 uppercase font-black mb-0.5">Growth 5Y</p>
+                    <p className="text-sm font-bold text-blue-500">{snapshot?.growthRate5Y || '—'}</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                    <p className="text-[9px] text-slate-400 uppercase font-black mb-0.5">ROE</p>
+                    <p className="text-sm font-bold text-emerald-500">{snapshot?.roe || '—'}</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                    <p className="text-[9px] text-slate-400 uppercase font-black mb-0.5">ROCE</p>
+                    <p className="text-sm font-bold text-emerald-500">{snapshot?.roce || '—'}</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                    <p className="text-[9px] text-slate-400 uppercase font-black mb-0.5">Debt / Equity</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-white">{snapshot?.debtToEquity || '—'}</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                    <p className="text-[9px] text-slate-400 uppercase font-black mb-0.5">Margin of Safety</p>
+                    <p className="text-sm font-bold text-emerald-500">{snapshot?.marginOfSafety || '—'}</p>
                   </div>
                 </div>
               </div>
@@ -112,19 +139,37 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                   </div>
                   <h3 className="font-bold text-slate-800 dark:text-slate-200">Technical Analysis</h3>
                 </div>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
-                    <span className="text-xs font-medium text-slate-500">200 Day MA</span>
-                    <span className="text-xs font-bold text-white bg-indigo-500 px-2 py-0.5 rounded-full">{snapshot?.ma200 || '—'}</span>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl flex flex-col items-center">
+                       <span className="text-[8px] font-black text-slate-400 uppercase">200 MA</span>
+                       <span className="text-[10px] font-bold text-indigo-500">{snapshot?.ma200 || '—'}</span>
+                    </div>
+                    <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl flex flex-col items-center">
+                       <span className="text-[8px] font-black text-slate-400 uppercase">100 MA</span>
+                       <span className="text-[10px] font-bold text-indigo-500">{snapshot?.ma100 || '—'}</span>
+                    </div>
+                    <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl flex flex-col items-center">
+                       <span className="text-[8px] font-black text-slate-400 uppercase">50 MA</span>
+                       <span className="text-[10px] font-bold text-indigo-500">{snapshot?.ma50 || '—'}</span>
+                    </div>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                     <span className="text-xs font-medium text-slate-500">RSI (14)</span>
                     <span className="text-xs font-bold text-amber-500">{snapshot?.rsi || '—'}</span>
                   </div>
                   <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <p className="text-[10px] leading-relaxed text-slate-500 italic">
+                    <p className="text-[10px] leading-relaxed text-slate-500 italic mb-3">
                       {snapshot?.technicalCommentary || '"Technical data pending fresh pulse scan."'}
                     </p>
+                    <a 
+                      href={`https://www.tradingview.com/symbols/${symbol.region === 'INDIA' ? 'NSE' : (symbol.type === 'CRYPTO' ? 'BINANCE' : 'NASDAQ')}:${symbol.symbol.replace('.NS', '')}/technicals/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex w-full items-center justify-center gap-2 py-2.5 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20"
+                    >
+                      More Analysis <ExternalLink className="w-3 h-3" />
+                    </a>
                   </div>
                 </div>
               </div>
@@ -254,6 +299,37 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                     </div>
                   )) : (
                     <p className="text-xs text-slate-500 italic pb-2">Competitor metrics pending.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Latest News Section */}
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-rose-500/10 rounded-xl text-rose-500">
+                    <Newspaper className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-bold text-slate-800 dark:text-slate-200">Latest Intelligence</h3>
+                </div>
+                <div className="space-y-3">
+                  {snapshot?.news && snapshot.news.length > 0 ? snapshot.news.map((item, idx) => (
+                    <a 
+                      key={idx} 
+                      href={item.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group"
+                    >
+                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 line-clamp-2 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                        {item.title}
+                      </p>
+                      <div className="mt-2 flex justify-between items-center text-[9px] font-black uppercase text-slate-400">
+                        <span>{item.date}</span>
+                        <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </a>
+                  )) : (
+                    <p className="text-xs text-slate-500 italic">No recent headlines found for this asset.</p>
                   )}
                 </div>
               </div>
