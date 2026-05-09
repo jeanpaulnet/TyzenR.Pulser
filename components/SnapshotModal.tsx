@@ -33,6 +33,20 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
       />
       
       <div className="relative w-full max-w-7xl max-h-[90vh] bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+        {/* Loading Overlay */}
+        {analysis?.isAnalyzing && (
+          <div className="absolute inset-0 z-[20] flex flex-col items-center justify-center bg-white/60 dark:bg-slate-950/60 backdrop-blur-md px-6 text-center animate-in fade-in duration-500">
+            <div className="relative mb-8">
+              <div className="w-24 h-24 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+              <Activity className="absolute inset-0 m-auto w-10 h-10 text-indigo-500 animate-pulse" />
+            </div>
+            <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Pulsing Intelligence...</h3>
+            <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto font-medium">
+              Synchronizing with global markets and synthesizing deep-dive metrics for {symbol.symbol}.
+            </p>
+          </div>
+        )}
+
         {!hasData && !analysis?.isAnalyzing && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm px-6 text-center">
             <Search className="w-16 h-16 text-indigo-500 mb-4 opacity-50" />
@@ -50,7 +64,6 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
               <button 
                 onClick={() => {
                   onRefresh();
-                  onClose();
                 }}
                 className="px-8 py-3 bg-indigo-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
               >
