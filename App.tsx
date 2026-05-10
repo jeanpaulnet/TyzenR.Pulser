@@ -5,7 +5,7 @@ import { INITIAL_SYMBOLS } from './constants';
 import { pulser } from './services/pulserAgent';
 import MarketCard from './components/MarketCard';
 import AddSymbolModal from './components/AddAssetModal';
-import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon } from 'lucide-react';
+import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon, LogOut } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode';
 
 declare global {
@@ -163,38 +163,7 @@ const App: React.FC = () => {
     }
   }, [isLoginModalOpen]);
 
-  // Poll for live prices every minute
-  useEffect(() => {
-    const intervalId = setInterval(async () => {
-      // Only poll if we have symbols and we're not currently scanning all
-      if (state.symbols.length === 0) return;
-
-      for (const symbol of state.symbols) {
-        try {
-          const { price } = await pulser.getLivePrice(symbol);
-          if (price && state.analyses[symbol.id]) {
-            setState(prev => ({
-              ...prev,
-              analyses: {
-                ...prev.analyses,
-                [symbol.id]: {
-                  ...prev.analyses[symbol.id],
-                  currentPrice: price,
-                } as PulserAnalysis
-              }
-            }));
-          }
-        } catch (error) {
-          // Silently fail for background price updates
-          console.debug(`Background price update failed for ${symbol.symbol}`);
-        }
-      }
-    }, 60000); // Check every minute (backend handles the 5-min cache)
-
-    return () => clearInterval(intervalId);
-  }, [state.symbols, state.analyses]);
-
-  const handleAnalyze = useCallback(async (symbol: MarketSymbol, forceRefresh = false) => {
+  const handleAnalyze = useCallback(async (symbol: MarketSymbol) => {
     setState(prev => ({
       ...prev,
       analyses: {
@@ -204,7 +173,7 @@ const App: React.FC = () => {
     }));
 
     try {
-      const result = await pulser.analyzeSymbol(symbol, forceRefresh);
+      const result = await pulser.analyzeSymbol(symbol);
       setState(prev => ({
         ...prev,
         analyses: {
@@ -279,22 +248,13 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className={`text-2xl font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-white'}`}>Pulser AI</h1>
-              <p className={`text-[10px] font-bold uppercase tracking-widest text-center md:text-left ${theme === 'dark' ? 'text-slate-500' : 'text-purple-100'}`}>AI Market Sentiment Intelligence</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <button 
-              onClick={toggleTheme}
-              className={`p-2 rounded-xl border transition-all ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-yellow-400 hover:border-yellow-400/50' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}
-              title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-
             <div className={`hidden lg:flex items-center gap-2 px-3 py-1.5 border rounded-full transition-colors ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white/10 border-white/20'}`}>
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span className={`text-xs font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-white'}`}>Engine Active</span>
+              <span className={`text-xs font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-white'}`}>AI Engine ON</span>
             </div>
 
             {user ? (
@@ -303,9 +263,10 @@ const App: React.FC = () => {
                 <span className={`text-xs font-bold hidden sm:inline ${theme === 'dark' ? 'text-slate-200' : 'text-white'}`}>{user.name.split(' ')[0]}</span>
                 <button 
                   onClick={() => { setUser(null); localStorage.removeItem('pulser_user'); }}
-                  className={`text-[10px] font-bold uppercase tracking-widest ml-1 ${theme === 'dark' ? 'text-slate-500 hover:text-rose-400' : 'text-purple-200 hover:text-white'}`}
+                  className={`p-1.5 rounded-lg transition-all ${theme === 'dark' ? 'text-slate-500 hover:text-rose-400 hover:bg-slate-800' : 'text-purple-200 hover:text-white hover:bg-white/10'}`}
+                  title="Logout"
                 >
-                  Logout
+                  <LogOut className="w-4 h-4" />
                 </button>
               </div>
             ) : (
@@ -331,16 +292,51 @@ const App: React.FC = () => {
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Search and Filters */}
         <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-          {window.location.hostname.includes('futurecaps.buzz') && (
+          {/* Action Buttons - Left */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
             <button 
-              onClick={() => window.open('https://futurecaps.com/free?ref=1-pulser', '_blank')}
-              className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-slate-950 px-6 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 shadow-lg shadow-yellow-400/20 w-full md:w-auto"
+              onClick={() => setIsAddModalOpen(true)}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border font-bold text-sm transition-all whitespace-nowrap shadow-lg active:scale-95 ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 border-blue-500 shadow-blue-600/20 text-white' : 'bg-indigo-600 hover:bg-indigo-700 border-indigo-500 shadow-indigo-600/20 text-white'}`}
             >
-              <TrendingUp className="w-4 h-4" /> Get a Free Multibagger
+              <Plus className="w-5 h-5" /> Add Symbol
             </button>
-          )}
 
-          <div className={`relative w-full ${window.location.hostname.includes('futurecaps.buzz') ? 'md:w-96' : 'md:flex-1'}`}>
+            <button 
+              onClick={handleScanAll}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border font-bold text-sm transition-all whitespace-nowrap shadow-lg active:scale-95 ${theme === 'dark' ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-500 shadow-emerald-600/20 text-white' : 'bg-emerald-500 hover:bg-emerald-600 border-emerald-400 shadow-emerald-500/20 text-white'}`}
+            >
+              <Activity className="w-4 h-4" /> Scan All
+            </button>
+          </div>
+
+          {/* Filters - Middle */}
+          <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar justify-center">
+            {window.location.hostname.includes('futurecaps.buzz') && (
+              <button 
+                onClick={() => window.open('https://futurecaps.com/free?ref=1-pulser', '_blank')}
+                className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-slate-950 px-4 py-2 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-lg shadow-yellow-400/20 whitespace-nowrap mr-2"
+              >
+                <TrendingUp className="w-3 h-3" /> Free Multibagger
+              </button>
+            )}
+            
+            {['ALL', ...Object.values(MarketType)].map(type => (
+              <button
+                key={type}
+                onClick={() => setFilterType(type)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                  filterType === type 
+                  ? theme === 'dark' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/20' : 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-600/20'
+                  : theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Box - Moved to Right */}
+          <div className={`relative w-full ${window.location.hostname.includes('futurecaps.buzz') ? 'md:w-72' : 'md:w-80'}`}>
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <input 
               type="text" 
@@ -349,29 +345,6 @@ const App: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full border rounded-2xl pl-12 pr-4 py-3 transition-all placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}
             />
-          </div>
-
-          <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar">
-            {['ALL', ...Object.values(MarketType)].map(type => (
-              <button
-                key={type}
-                onClick={() => setFilterType(type)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
-                  filterType === type 
-                  ? theme === 'dark' ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-600/20' : 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-600/20'
-                  : theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
-                }`}
-              >
-                {type}
-              </button>
-            ))}
-            <div className={`w-px h-6 mx-2 ${theme === 'dark' ? 'bg-slate-800' : 'bg-slate-200'}`} />
-            <button 
-              onClick={() => setIsAddModalOpen(true)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl border font-bold text-xs transition-all whitespace-nowrap shadow-lg ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 border-blue-500 shadow-blue-600/20 text-white' : 'bg-indigo-600 hover:bg-indigo-700 border-indigo-500 shadow-indigo-600/20 text-white'}`}
-            >
-              <Plus className="w-4 h-4" /> Add Symbol
-            </button>
           </div>
         </div>
 
@@ -382,7 +355,7 @@ const App: React.FC = () => {
               key={symbol.id}
               symbol={symbol}
               analysis={state.analyses[symbol.id]}
-              onRefresh={(s) => handleAnalyze(s, true)}
+              onRefresh={handleAnalyze}
               onRemove={handleRemoveSymbol}
             />
           ))}
@@ -404,10 +377,24 @@ const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className={`border-t py-8 px-4 mt-auto transition-colors ${theme === 'dark' ? 'border-slate-800' : 'border-slate-200'}`}>
-        <div className="max-w-7xl mx-auto text-center">
-          <p className={`text-[11px] italic leading-relaxed max-w-3xl mx-auto transition-colors ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
-            Disclaimer: AI scanning multiple websites & providing Action Insights. These will be used for personal trading/investing purposes by the experienced person. Website is not accountable for any loss incurred unless you shared the profit with us.
+      <footer className={`border-t py-12 px-4 mt-auto transition-colors ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8 items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={toggleTheme}
+              className={`p-3 rounded-2xl border transition-all shadow-lg active:scale-95 ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-yellow-400 hover:border-yellow-400/50 shadow-slate-950/40' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 shadow-slate-200/40'}`}
+              title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5 stroke-[2.5px]" /> : <Moon className="w-5 h-5 stroke-[2.5px]" />}
+            </button>
+            <div className="flex flex-col">
+              <span className={`text-sm font-black tracking-widest ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>PULSER AI</span>
+              <span className="text-[10px] text-slate-500 font-medium">© 2026 AI Intel.</span>
+            </div>
+          </div>
+          
+          <p className={`text-[11px] italic leading-relaxed max-w-2xl text-center md:text-right transition-colors ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+            Disclaimer: AI scanning multiple websites & providing Action Insights. For personal trading/investing purposes by experienced personnel. Website not accountable for loss unless profit shared.
           </p>
         </div>
       </footer>

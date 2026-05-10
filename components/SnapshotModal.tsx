@@ -2,7 +2,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { MarketSymbol, PulserAnalysis } from '../types';
-import { X, TrendingUp, BarChart, Info, Users, Zap, Search, Activity, Target, ExternalLink, Newspaper } from 'lucide-react';
+import { X, TrendingUp, BarChart, Info, Users, Zap, Search, Activity, Target, ExternalLink, Newspaper, RefreshCw } from 'lucide-react';
 import { BarChart as ReChartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface SnapshotModalProps {
@@ -23,6 +23,20 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
   const peers = snapshot?.peers || [];
   const expansionPlans = snapshot?.expansionPlans || [];
 
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      // We don't set isRefreshing to false here because the component 
+      // should re-render with analysis.isAnalyzing=true from props
+      // and hide this whole view. But as a fallback:
+      setTimeout(() => setIsRefreshing(false), 2000);
+    }
+  };
+
   const hasData = !!snapshot;
 
   return createPortal(
@@ -34,7 +48,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
       
       <div className="relative w-full max-w-7xl max-h-[90vh] bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
         {/* Loading Overlay */}
-        {analysis?.isAnalyzing && (
+        {(analysis?.isAnalyzing || isRefreshing) && (
           <div className="absolute inset-0 z-[20] flex flex-col items-center justify-center bg-white/60 dark:bg-slate-950/60 backdrop-blur-md px-6 text-center animate-in fade-in duration-500">
             <div className="relative mb-8">
               <div className="w-24 h-24 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
@@ -47,7 +61,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
           </div>
         )}
 
-        {!hasData && !analysis?.isAnalyzing && (
+        {!hasData && !analysis?.isAnalyzing && !isRefreshing && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm px-6 text-center">
             <Search className="w-16 h-16 text-indigo-500 mb-4 opacity-50" />
             <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-2">No Deep-Dive Data</h3>
@@ -62,12 +76,18 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                 Close
               </button>
               <button 
-                onClick={() => {
-                  onRefresh();
-                }}
-                className="px-8 py-3 bg-indigo-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="px-8 py-3 bg-indigo-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50 flex items-center gap-2"
               >
-                REFRESH NOW
+                {isRefreshing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    REFRESHING...
+                  </>
+                ) : (
+                  'REFRESH NOW'
+                )}
               </button>
             </div>
           </div>
