@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { MarketSymbol, PulserAnalysis } from '../types';
+import { MarketSymbol, PulserAnalysis, MarketType } from '../types';
 import { X, TrendingUp, BarChart, Info, Users, Zap, Search, Activity, Target, ExternalLink, Newspaper, RefreshCw } from 'lucide-react';
 import { BarChart as ReChartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -24,6 +24,27 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
   const expansionPlans = snapshot?.expansionPlans || [];
 
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [lookedUpExchangeSymbol, setLookedUpExchangeSymbol] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const lookupSymbol = async () => {
+      try {
+        const stock = symbol.symbol;
+        const country = symbol.region || 'GLOBAL';
+        const response = await fetch(`https://webapi.tyzenr.com/pulser/symbol/lookup/${stock}/${country}`);
+        if (response.ok) {
+          const data = await response.text();
+          if (data && data.includes(':')) {
+            setLookedUpExchangeSymbol(data.trim());
+          }
+        }
+      } catch (error) {
+        console.error('Symbol lookup failed:', error);
+      }
+    };
+
+    lookupSymbol();
+  }, [symbol]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -38,6 +59,32 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
   };
 
   const hasData = !!snapshot;
+
+  const getTradingViewExchangeSymbol = () => {
+    if (lookedUpExchangeSymbol) return lookedUpExchangeSymbol;
+    
+    let tvTicker = snapshot?.tradingViewTicker;
+    
+    if (!tvTicker) {
+      const base = symbol.symbol.split(/[.\-]/)[0];
+      // Common overrides
+      const overrides: Record<string, string> = {
+        'NVIDIA': 'NVDA',
+        'GOOGLE': 'GOOGL',
+        'RELIANCE': 'RELIANCE',
+        'TATASTEEL': 'TATASTEEL'
+      };
+      tvTicker = overrides[base.toUpperCase()] || base;
+    }
+
+    const exchange = symbol.region === 'INDIA' 
+      ? (symbol.symbol.endsWith('.BO') ? 'BSE' : 'NSE') 
+      : (symbol.type === MarketType.CRYPTO ? 'BINANCE' : 'NASDAQ');
+
+    return `${exchange}:${tvTicker}`;
+  };
+
+  const exchangeSymbol = getTradingViewExchangeSymbol();
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-10 pointer-events-auto">
@@ -103,7 +150,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
               <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
                 {symbol.symbol} <span className="text-slate-400 dark:text-slate-500 font-medium text-lg">— {symbol.name}</span>
               </h2>
-              <p className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest">Deep-Dive Market Snapshot</p>
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest">Empower Your Decisions</p>
             </div>
           </div>
           <button 
@@ -196,11 +243,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                       {snapshot?.technicalCommentary || '"Technical data pending fresh pulse scan."'}
                     </p>
                     <a 
-                      href={`https://www.tradingview.com/symbols/${
-                        symbol.region === 'INDIA' 
-                          ? (symbol.symbol.endsWith('.BO') ? 'BSE' : 'NSE') 
-                          : (symbol.type === 'CRYPTO' ? 'BINANCE' : 'NASDAQ')
-                      }:${symbol.symbol.split(/[.\-]/)[0]}/technicals/`}
+                      href={`https://www.tradingview.com/symbols/${exchangeSymbol}/technicals/`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex w-full items-center justify-center gap-2 py-2.5 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20"

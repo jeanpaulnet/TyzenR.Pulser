@@ -51,6 +51,7 @@ export interface PulserAnalysis {
     growthData?: { year: string; revenue: number; growth: number }[];
     expansionPlans?: string[];
     about?: string;
+    tradingViewTicker?: string;
     founded?: string;
     employees?: string;
     peers?: { name: string; pe: string; marketCap: string }[];

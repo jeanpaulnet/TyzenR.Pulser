@@ -56,6 +56,7 @@ export class PulserAgent {
           "rsi": "number",
           "technicalCommentary": "brief technical summary",
           "about": "detailed company profile",
+          "tradingViewTicker": "STRICT tradingview compatible ticker symbol (e.g. NVDA for Nvidia, AAPL for Apple)",
           "founded": "year",
           "employees": "count",
           "peers": [{"name": "PeerName", "pe": "PE", "marketCap": "Value"}],

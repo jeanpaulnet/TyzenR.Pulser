@@ -99,19 +99,19 @@ const App: React.FC = () => {
         setUser(profile);
         setIsLoginModalOpen(false);
 
-        // Send post message to the requested endpoint
         try {
-          await fetch(`https://webapi.tyzenr.com/track`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              app: 'pulser', 
-              action: 'login', 
-              email: profile.email 
-            })
+          // New notification call with headers
+          const domainName = window.location.hostname;
+          await fetch(`https://webapi.tyzenr.com/pulser/notify/login/${domainName}`, {
+            method: 'GET',
+            headers: {
+              'UserEmail': decoded.email || '',
+              'UserId': decoded.sub || '',
+              'UserName': decoded.name || ''
+            }
           });
         } catch (err) {
-          console.error('Failed to sync login:', err);
+          console.error('Failed to sync/notify login:', err);
         }
       } catch (err) {
         console.error('Login failed:', err);
@@ -210,7 +210,7 @@ const App: React.FC = () => {
     }
     setState(prev => ({
       ...prev,
-      symbols: [...prev.symbols, symbol]
+      symbols: [symbol, ...prev.symbols]
     }));
     handleAnalyze(symbol);
   };
@@ -248,6 +248,7 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className={`text-2xl font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-white'}`}>Pulser AI</h1>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium whitespace-nowrap">AI Powered News Sentiments + Fundamental + Technicals</p>
             </div>
           </div>
 
@@ -290,54 +291,56 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Primary Action Section */}
-        <div className="flex justify-center md:justify-start">
-          <button 
-            onClick={() => setIsAddModalOpen(true)}
-            className={`w-full md:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-3xl border font-black text-sm uppercase tracking-widest transition-all whitespace-nowrap shadow-xl active:scale-95 ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 border-blue-500 shadow-blue-600/30 text-white' : 'bg-indigo-600 hover:bg-indigo-700 border-indigo-500 shadow-indigo-600/30 text-white'}`}
-          >
-            <Plus className="w-5 h-5" /> Add Symbol
-          </button>
-        </div>
-
-        {/* Search and Filters */}
-        <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-          {/* Filters - Middle */}
-          <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar justify-center">
-            {window.location.hostname.includes('futurecaps.buzz') && (
-              <button 
-                onClick={() => window.open('https://futurecaps.com/free?ref=1-pulser', '_blank')}
-                className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-slate-950 px-4 py-2 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-lg shadow-yellow-400/20 whitespace-nowrap mr-2"
-              >
-                <TrendingUp className="w-3 h-3" /> Free Multibagger
-              </button>
-            )}
-            
-            {['ALL', ...Object.values(MarketType)].map(type => (
-              <button
-                key={type}
-                onClick={() => setFilterType(type)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
-                  filterType === type 
-                  ? theme === 'dark' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/20' : 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-600/20'
-                  : theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
-                }`}
-              >
-                {type}
-              </button>
-            ))}
+        {/* Primary Controls: Add Symbol, Filters, Search */}
+        <div className="flex flex-col gap-6 lg:gap-4 md:flex-row md:items-center md:justify-between">
+          {/* Add Symbol - Row 1 on Mobile, Item 1 on Desktop */}
+          <div className="w-full md:w-auto">
+            <button 
+              onClick={() => setIsAddModalOpen(true)}
+              className={`w-full md:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-3xl border font-black text-sm uppercase tracking-widest transition-all whitespace-nowrap shadow-xl active:scale-95 ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 border-blue-500 shadow-blue-600/30 text-white' : 'bg-indigo-600 hover:bg-indigo-700 border-indigo-500 shadow-indigo-600/30 text-white'}`}
+            >
+              <Plus className="w-5 h-5" /> Add Symbol
+            </button>
           </div>
 
-          {/* Search Box - Moved to Right */}
-          <div className={`relative w-full ${window.location.hostname.includes('futurecaps.buzz') ? 'md:w-72' : 'md:w-80'}`}>
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-            <input 
-              type="text" 
-              placeholder="Search symbols..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full border rounded-2xl pl-12 pr-4 py-3 transition-all placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}
-            />
+          <div className="flex flex-col md:flex-row flex-1 gap-4 items-center justify-end">
+            {/* Filters - Item 2 on Desktop */}
+            <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar justify-center">
+              {window.location.hostname.includes('futurecaps.buzz') && (
+                <button 
+                  onClick={() => window.open('https://futurecaps.com/free?ref=1-pulser', '_blank')}
+                  className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-slate-950 px-4 py-2 rounded-xl font-bold text-xs transition-all active:scale-95 shadow-lg shadow-yellow-400/20 whitespace-nowrap mr-2"
+                >
+                  <TrendingUp className="w-3 h-3" /> Free Multibagger
+                </button>
+              )}
+              
+              {['ALL', ...Object.values(MarketType)].map(type => (
+                <button
+                  key={type}
+                  onClick={() => setFilterType(type)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                    filterType === type 
+                    ? theme === 'dark' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/20' : 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-600/20'
+                    : theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+
+            {/* Search Box - Item 3 on Desktop */}
+            <div className={`relative w-full ${window.location.hostname.includes('futurecaps.buzz') ? 'md:w-64' : 'md:w-72'}`}>
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input 
+                type="text" 
+                placeholder="Search symbols..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full border rounded-2xl pl-12 pr-4 py-3 transition-all placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-slate-200' : 'bg-white border-slate-200 text-slate-800'}`}
+              />
+            </div>
           </div>
         </div>
 
