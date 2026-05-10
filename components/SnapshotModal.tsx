@@ -196,12 +196,16 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                       {snapshot?.technicalCommentary || '"Technical data pending fresh pulse scan."'}
                     </p>
                     <a 
-                      href={`https://www.tradingview.com/symbols/${symbol.region === 'INDIA' ? 'NSE' : (symbol.type === 'CRYPTO' ? 'BINANCE' : 'NASDAQ')}:${symbol.symbol.split(/[.\-]/)[0]}/technicals/`}
+                      href={`https://www.tradingview.com/symbols/${
+                        symbol.region === 'INDIA' 
+                          ? (symbol.symbol.endsWith('.BO') ? 'BSE' : 'NSE') 
+                          : (symbol.type === 'CRYPTO' ? 'BINANCE' : 'NASDAQ')
+                      }:${symbol.symbol.split(/[.\-]/)[0]}/technicals/`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex w-full items-center justify-center gap-2 py-2.5 bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20"
                     >
-                      More Analysis <ExternalLink className="w-3 h-3" />
+                      More Technicals <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                 </div>

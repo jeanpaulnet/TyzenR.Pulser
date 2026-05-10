@@ -290,25 +290,18 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Primary Action Section */}
+        <div className="flex justify-center md:justify-start">
+          <button 
+            onClick={() => setIsAddModalOpen(true)}
+            className={`w-full md:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-3xl border font-black text-sm uppercase tracking-widest transition-all whitespace-nowrap shadow-xl active:scale-95 ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 border-blue-500 shadow-blue-600/30 text-white' : 'bg-indigo-600 hover:bg-indigo-700 border-indigo-500 shadow-indigo-600/30 text-white'}`}
+          >
+            <Plus className="w-5 h-5" /> Add Symbol
+          </button>
+        </div>
+
         {/* Search and Filters */}
         <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-          {/* Action Buttons - Left */}
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <button 
-              onClick={() => setIsAddModalOpen(true)}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border font-bold text-sm transition-all whitespace-nowrap shadow-lg active:scale-95 ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 border-blue-500 shadow-blue-600/20 text-white' : 'bg-indigo-600 hover:bg-indigo-700 border-indigo-500 shadow-indigo-600/20 text-white'}`}
-            >
-              <Plus className="w-5 h-5" /> Add Symbol
-            </button>
-
-            <button 
-              onClick={handleScanAll}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border font-bold text-sm transition-all whitespace-nowrap shadow-lg active:scale-95 ${theme === 'dark' ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-500 shadow-emerald-600/20 text-white' : 'bg-emerald-500 hover:bg-emerald-600 border-emerald-400 shadow-emerald-500/20 text-white'}`}
-            >
-              <Activity className="w-4 h-4" /> Scan All
-            </button>
-          </div>
-
           {/* Filters - Middle */}
           <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 no-scrollbar justify-center">
             {window.location.hostname.includes('futurecaps.buzz') && (
