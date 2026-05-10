@@ -9,6 +9,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@google/genai": "^2.0.1",
     "@google/generative-ai": "^0.24.1",
     "express": "^5.2.1",
     "jwt-decode": "^4.0.0",

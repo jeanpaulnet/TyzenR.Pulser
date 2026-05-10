@@ -1,5 +1,5 @@
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { MarketSymbol, Sentiment, PulserAnalysis } from "../types";
 
 export class PulserAgent {
@@ -17,7 +17,7 @@ export class PulserAgent {
       return this.cachedApiKey;
     } catch (error) {
       console.warn('External API key fetch failed, checking local env...', error);
-      const fallbackKey = (import.meta.env.VITE_GEMINI_API_KEY as string);
+      const fallbackKey = (process.env.GEMINI_API_KEY as string);
       if (fallbackKey) return fallbackKey;
       throw error;
     }
@@ -29,8 +29,7 @@ export class PulserAgent {
   async analyzeSymbol(symbol: MarketSymbol): Promise<PulserAnalysis> {
     try {
       const apiKey = await this.getApiKey();
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const ai = new GoogleGenAI({ apiKey });
 
       const prompt = `Perform an institutional-grade deep dive for ${symbol.symbol} (${symbol.name}) in the ${symbol.type} market. 
       Focus on VERY RECENT news, earnings, and institutional sentiment.
@@ -65,8 +64,12 @@ export class PulserAgent {
         }
       }`;
 
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+      });
+
+      const text = response.text || "";
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       const data = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(text);
 

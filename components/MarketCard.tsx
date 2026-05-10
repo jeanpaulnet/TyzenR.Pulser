@@ -47,7 +47,7 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
         return 'from-slate-700 to-slate-900 dark:from-slate-900 dark:to-black';
       case 'STOCK':
         if (marketSymbol.region === 'INDIA') {
-          return 'from-orange-500 to-amber-600 dark:from-orange-950 dark:to-slate-900';
+          return 'from-orange-500 to-orange-600 dark:from-orange-900 dark:to-slate-900';
         }
         return 'from-blue-600 to-indigo-700 dark:from-blue-950 dark:to-slate-900';
       default:
