@@ -162,7 +162,7 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
               <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-100 dark:border-slate-800">
                  <button 
                    onClick={() => setIsSnapshotOpen(true)}
-                   className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors bg-emerald-500/10 dark:bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-500/20"
+                   className="flex items-center gap-1.5 text-[9px] font-bold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors bg-sky-500/10 dark:bg-sky-500/10 px-2.5 py-1.5 rounded-lg border border-sky-200 dark:border-sky-500/20"
                  >
                    <Fingerprint className="w-2.5 h-2.5" />
                    SNAPSHOT
