@@ -26,7 +26,7 @@ export class PulserAgent {
   /**
    * Validates if a symbol exists in the chosen market/region.
    */
-  async validateSymbol(symbol: string, type: string, region: string): Promise<{ isValid: boolean; name?: string }> {
+  async validateSymbol(symbol: string, type: string, region: string): Promise<{ isValid: boolean; name?: string; reason?: string }> {
     try {
       const apiKey = await this.getApiKey();
       const ai = new GoogleGenAI({ apiKey });
@@ -34,7 +34,7 @@ export class PulserAgent {
       const prompt = `Quick verification: Does the market symbol "${symbol}" exist in the ${region} region as a ${type}? 
       Use Google Search to confirm. 
       If it exists, return EXACTLY this JSON: {"isValid": true, "name": "Company/Asset Full Name"}
-      If it does not exist or is highly likely incorrect, return: {"isValid": false}`;
+      If it does not exist or is highly likely incorrect, return: {"isValid": false, "reason": "Short explanation why it might be invalid (e.g., symbol not found on NSE/BSE, or incorrect crypto pair)"}`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
@@ -46,13 +46,12 @@ export class PulserAgent {
 
       const text = response.text || "";
       const jsonMatch = text.match(/\{[\s\S]*\}/);
-      const data = jsonMatch ? JSON.parse(jsonMatch[0]) : { isValid: false };
+      const data = jsonMatch ? JSON.parse(jsonMatch[0]) : { isValid: false, reason: "Could not parse verification data" };
       
       return data;
     } catch (error) {
       console.error('Validation error:', error);
-      // Fail open to avoid blocking users if AI limits are hit, but we should be cautious
-      return { isValid: true, name: symbol }; 
+      throw error;
     }
   }
 
@@ -80,8 +79,11 @@ export class PulserAgent {
       CRITICAL INSTRUCTION: You MUST use the Google Search tool to find "LIVE" news from the last 24-48 hours. 
       Analyze: Recent price action catalysts, earnings reports, regulatory news, and analyst sentiment.
       
+      CRITICAL: For "growthData", you MUST find and include the Revenue and Profit (Net Income) for the PAST 5 CONSECUTIVE YEARS. This is the top priority for the "Growth Chart". If exact revenue/profit isn't found in one search, look for annual reports or investor presentations.
+      
       URL POLICY: All URLs in your response MUST be verifiable, live article links found in your search results. 
-      Do NOT provide dead links or generic homepages. If you provide a link, it must be the direct article.
+      Do NOT provide dead links, 404 pages, or generic homepages. EVERY link must point to a specific, active article.
+      If you are unsure if a link is still live, do not include it.
       
       JSON OUTPUT FORMAT:
       {
@@ -113,8 +115,10 @@ export class PulserAgent {
           "tradingViewTicker": "TICKER",
           "founded": "Year",
           "employees": "Count",
-          "peers": [{"name": "Peer", "pe": "PE", "marketCap": "MCap"}],
-          "expansionPlans": ["Strategic points"],
+          "peers": [{"name": "Peer", "pe": "PE", "marketCap": "MCap", "pb": "PB"}],
+          "peerComparison": "Detailed paragraph comparing the company's valuation (PE/PB) and performance against these specific peers.",
+          "expansionPlans": [{"plan": "Strategic point", "date": "Estimated timeline, e.g., Q4 2024"}],
+          "growthData": [{"year": "2023", "revenue": 100.5, "profit": 15.2, "growth": 10.5}],
           "news": [{"title": "Article Headline", "url": "ARTICLE_URL", "date": "Published Date"}]
         }
       }`;
@@ -149,10 +153,16 @@ export class PulserAgent {
         if (!url) return true;
         if (!url.startsWith('http')) return true;
         const lowUrl = url.toLowerCase();
+        
         // Detect common root domains or placeholders instead of direct articles
-        const placeholders = ['yahoo.com', 'reuters.com', 'bloomberg.com', 'cnbc.com', 'investing.com', 'marketwatch.com'];
+        const placeholders = ['yahoo.com', 'reuters.com', 'bloomberg.com', 'cnbc.com', 'investing.com', 'marketwatch.com', 'google.com'];
         const isRoot = placeholders.some(p => lowUrl === `https://${p}` || lowUrl === `http://${p}` || lowUrl === `https://www.${p}` || lowUrl === `http://www.${p}`);
-        return isRoot || url.length < 25; // Articles are usually long URLs
+        
+        // Detect 404 or error markers in the URL itself
+        const errorMarkers = ['/404', 'notfound', 'error-page', 'access-denied', 'page-not-found'];
+        const hasErrorMarker = errorMarkers.some(m => lowUrl.includes(m));
+
+        return isRoot || hasErrorMarker || url.length < 22; // Articles are usually long URLs
       };
 
       // Sanitize News (ensure links are real)

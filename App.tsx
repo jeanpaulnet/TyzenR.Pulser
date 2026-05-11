@@ -308,10 +308,10 @@ const App: React.FC = () => {
               <Zap className="w-6 h-6 text-white fill-current" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white">
-                Pulser <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent italic">AI</span>
+              <h1 className="text-2xl font-bold tracking-tight text-white flex items-baseline gap-1">
+                Pulser <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent italic inline-block pr-1">AI</span>
               </h1>
-              <p className="text-[10px] text-slate-400 font-medium whitespace-nowrap">AI Powered News Sentiments + Fundamental + Technicals</p>
+              <p className="text-[10px] text-slate-400 font-medium whitespace-nowrap">AI Powered Market Sentiments + Fundamentals + Technicals</p>
             </div>
           </div>
 
@@ -469,7 +469,7 @@ const App: React.FC = () => {
           <div className="flex items-center gap-6">
             <div className="flex flex-col">
               <span className={`text-sm font-black tracking-widest ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
-                PULSER <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent">AI</span>
+                PULSER <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent inline-block pr-0.5">AI</span>
               </span>
               <span className="text-[10px] text-slate-500 font-medium">© 2026 AI Intel.</span>
             </div>
@@ -479,6 +479,21 @@ const App: React.FC = () => {
             >
               <Mail className="w-4 h-4" /> Contact Support
             </button>
+
+            <div className={`flex items-center gap-1 p-1 rounded-xl border transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+              <button 
+                onClick={() => setTheme('light')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${theme === 'light' ? 'bg-white text-indigo-600 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                <Sun className="w-3 h-3" /> Light
+              </button>
+              <button 
+                onClick={() => setTheme('dark')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${theme === 'dark' ? 'bg-slate-800 text-blue-400 shadow-sm border border-slate-700' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                <Moon className="w-3 h-3" /> Dark
+              </button>
+            </div>
           </div>
           
           <p className={`text-[11px] italic leading-relaxed max-w-2xl text-center md:text-right transition-colors ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
@@ -491,6 +506,7 @@ const App: React.FC = () => {
         <AddSymbolModal 
           onAdd={handleAddSymbol} 
           onClose={() => setIsAddModalOpen(false)} 
+          existingSymbols={state.symbols}
         />
       )}
 

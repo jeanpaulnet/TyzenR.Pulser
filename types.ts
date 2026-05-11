@@ -51,13 +51,14 @@ export interface PulserAnalysis {
     ma50?: string;
     rsi?: string;
     technicalCommentary?: string;
-    growthData?: { year: string; revenue: number; growth: number }[];
-    expansionPlans?: string[];
+    growthData?: { year: string; revenue: number; profit: number; growth: number }[];
+    expansionPlans?: { plan: string; date: string }[];
     about?: string;
     tradingViewTicker?: string;
     founded?: string;
     employees?: string;
-    peers?: { name: string; pe: string; marketCap: string }[];
+    peers?: { name: string; pe: string; marketCap: string; pb?: string }[];
+    peerComparison?: string;
     news?: { title: string; url: string; date: string }[];
   };
 }

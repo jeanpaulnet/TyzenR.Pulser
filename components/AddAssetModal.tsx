@@ -7,9 +7,10 @@ import { pulser } from '../services/pulserAgent';
 interface AddSymbolModalProps {
   onAdd: (symbol: MarketSymbol) => void;
   onClose: () => void;
+  existingSymbols: MarketSymbol[];
 }
 
-const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose }) => {
+const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existingSymbols }) => {
   const [symbol, setSymbol] = useState('');
   const [type, setType] = useState<MarketType>(MarketType.STOCK);
   const [region, setRegion] = useState<'US' | 'INDIA' | 'GLOBAL'>('US');
@@ -35,6 +36,11 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose }) => {
       return;
     }
 
+    if (existingSymbols.some(s => s.symbol === trimmedSymbol && s.region === region)) {
+      setError(`Symbol "${trimmedSymbol}" is already in your tracking list for ${region}.`);
+      return;
+    }
+
     setIsValidating(true);
     setError(null);
 
@@ -42,11 +48,11 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose }) => {
       const validation = await pulser.validateSymbol(trimmedSymbol, type, region);
       
       if (!validation.isValid) {
-        setError(`Could not verify "${trimmedSymbol}" as a ${type.toLowerCase()} in ${region}. Please check the symbol and region.`);
+        setError(validation.reason || `Could not verify "${trimmedSymbol}" as a ${type.toLowerCase()} in ${region}. Please check the symbol and region.`);
         setIsValidating(false);
         return;
       }
-
+      
       onAdd({
         id: Date.now().toString(),
         symbol: trimmedSymbol,
@@ -57,15 +63,7 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose }) => {
       onClose();
     } catch (err) {
       console.error('Validation failed:', err);
-      // Fallback if AI fails, allow adding anyway to prevent breaking the flow
-      onAdd({
-        id: Date.now().toString(),
-        symbol: trimmedSymbol,
-        name: trimmedSymbol,
-        type,
-        region
-      });
-      onClose();
+      setError('Unable to verify symbol right now. Please check the symbol manually or try again.');
     } finally {
       setIsValidating(false);
     }

@@ -282,7 +282,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                     </div>
                     <h3 className="font-bold text-slate-800 dark:text-slate-200">Growth Chart</h3>
                   </div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase">REVENUE (BILLIONS {symbol.region === 'INDIA' ? '₹' : '$'})</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase">REVENUE & PROFIT (BILLIONS {symbol.region === 'INDIA' ? '₹' : '$'})</span>
                 </div>
                 
                 <div className="flex-1 w-full min-h-[150px]">
@@ -312,11 +312,8 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                           }}
                           cursor={{ fill: 'rgba(51, 65, 85, 0.1)' }}
                         />
-                        <Bar dataKey="revenue" radius={[6, 6, 0, 0]} barSize={40}>
-                          {growthData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={index === growthData.length - 1 ? '#8b5cf6' : '#3b82f6'} />
-                          ))}
-                        </Bar>
+                        <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
+                        <Bar dataKey="profit" name="Profit" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
                       </ReChartsBarChart>
                     </ResponsiveContainer>
                   ) : (
@@ -336,10 +333,13 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                   <h3 className="font-bold text-slate-800 dark:text-slate-200">Expansion Plans</h3>
                 </div>
                 <div className="space-y-3">
-                  {expansionPlans.length > 0 ? expansionPlans.map((plan, idx) => (
+                  {expansionPlans.length > 0 ? expansionPlans.map((item, idx) => (
                     <div key={idx} className="flex gap-4 items-start">
                       <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 flex-shrink-0" />
-                      <p className="text-xs text-slate-600 dark:text-slate-400">{plan}</p>
+                      <div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400">{item.plan}</p>
+                        <p className="text-[9px] font-bold text-purple-500 uppercase mt-1">{item.date}</p>
+                      </div>
                     </div>
                   )) : (
                     <p className="text-xs text-slate-500 italic">Strategic roadmap data pending.</p>
@@ -382,18 +382,39 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                   <h3 className="font-bold text-slate-800 dark:text-slate-200">Peers & Comparison</h3>
                 </div>
                 <div className="space-y-3">
-                  {peers.length > 0 ? peers.map((peer, idx) => (
-                    <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl flex justify-between items-center group hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                      <div>
-                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{peer.name}</p>
-                        <p className="text-[9px] text-slate-500 font-medium">{peer.marketCap}</p>
+                  {peers.length > 0 ? (
+                    <>
+                      <div className="space-y-2">
+                        {peers.map((peer, idx) => (
+                          <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl flex justify-between items-center group hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                            <div className="flex-1">
+                              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{peer.name}</p>
+                              <p className="text-[9px] text-slate-500 font-medium">{peer.marketCap}</p>
+                            </div>
+                            <div className="flex gap-4 text-right">
+                              <div>
+                                <p className="text-[8px] uppercase font-black text-slate-400">P/E</p>
+                                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{peer.pe}</p>
+                              </div>
+                              <div>
+                                <p className="text-[8px] uppercase font-black text-slate-400">P/B</p>
+                                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{peer.pb || '—'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="text-right">
-                        <p className="text-[9px] uppercase font-black text-slate-400 mb-0.5">P/E Ratio</p>
-                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{peer.pe}</p>
-                      </div>
-                    </div>
-                  )) : (
+                      
+                      {snapshot?.peerComparison && (
+                        <div className="mt-4 p-4 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-2xl border border-indigo-500/10">
+                          <p className="text-[10px] font-black uppercase text-indigo-500 mb-2">Peer Comparison Analysis</p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed italic">
+                            {snapshot.peerComparison}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
                     <p className="text-xs text-slate-500 italic pb-2">Competitor metrics pending.</p>
                   )}
                 </div>
