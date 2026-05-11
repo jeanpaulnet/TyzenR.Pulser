@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { MarketSymbol, MarketType, PulserAnalysis, Sentiment } from '../types';
 import { SENTIMENT_COLORS } from '../constants';
-import { TrendingUp, TrendingDown, Minus, RefreshCw, ExternalLink, AlertCircle, Clock, Calendar, BarChart3, Fingerprint } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, RefreshCw, ExternalLink, AlertCircle, Clock, Calendar, BarChart3, Fingerprint, GripVertical } from 'lucide-react';
 import SnapshotModal from './SnapshotModal';
 
 interface MarketCardProps {
@@ -58,7 +58,12 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
   return (
     <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] hover:border-purple-400 dark:hover:border-slate-600 transition-all group relative overflow-hidden backdrop-blur-sm shadow-sm dark:shadow-none flex flex-col">
       {/* Header Area */}
-      <div className={`bg-gradient-to-br ${getHeaderGradient()} px-6 py-5 relative border-b dark:border-slate-800/40`}>
+      <div className={`bg-gradient-to-br ${getHeaderGradient()} px-6 py-5 relative border-b dark:border-slate-800/40 cursor-grab active:cursor-grabbing`}>
+        {/* Drag Handle */}
+        <div className="absolute left-2 top-1/2 -translate-y-1/2 opacity-30 group-hover:opacity-60 transition-opacity">
+          <GripVertical className="w-4 h-4 text-white" />
+        </div>
+
         {/* Live Indicator */}
         {analysis?.currentPrice && !isAnalyzing && (
           <div className="absolute top-0 right-0 p-2">

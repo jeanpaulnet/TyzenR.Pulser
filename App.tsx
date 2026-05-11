@@ -5,8 +5,9 @@ import { INITIAL_SYMBOLS } from './constants';
 import { pulser } from './services/pulserAgent';
 import MarketCard from './components/MarketCard';
 import AddSymbolModal from './components/AddAssetModal';
-import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon, LogOut } from 'lucide-react';
+import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon, LogOut, Mail, Send, CheckCircle2, GripHorizontal } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode';
+import { Reorder } from 'motion/react';
 
 declare global {
   interface Window {
@@ -70,6 +71,10 @@ const App: React.FC = () => {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const [supportMessage, setSupportMessage] = useState('');
+  const [isSendingSupport, setIsSendingSupport] = useState(false);
+  const [supportResponse, setSupportResponse] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
 
@@ -233,8 +238,54 @@ const App: React.FC = () => {
     return matchesSearch && matchesType;
   });
 
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  const handleReorder = (newOrder: MarketSymbol[]) => {
+    setState(prev => {
+      const filteredIds = new Set(filteredSymbols.map(s => s.id));
+      let filteredIdx = 0;
+      const updatedSymbols = prev.symbols.map(s => {
+        if (filteredIds.has(s.id)) {
+          return newOrder[filteredIdx++];
+        }
+        return s;
+      });
+      return { ...prev, symbols: updatedSymbols };
+    });
+  };
+
+  const handleSupportSubmit = async () => {
+    if (!supportMessage.trim()) return;
+    
+    setIsSendingSupport(true);
+    try {
+      const response = await fetch('https://webapi.tyzenr.com/common/contact/support', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'UserEmail': user?.email || '',
+          'UserName': user?.name || ''
+        },
+        body: JSON.stringify({
+          AppName: window.location.hostname,
+          UserName: user?.name || '',
+          UserEmail: user?.email || '',
+          Message: supportMessage
+        })
+      });
+      
+      const data = await response.text();
+      setSupportResponse(data);
+    } catch (err) {
+      console.error('Support submission failed:', err);
+      setSupportResponse('Failed to send message. Please try again later.');
+    } finally {
+      setIsSendingSupport(false);
+    }
+  };
+
+  const closeSupportModal = () => {
+    setIsSupportModalOpen(false);
+    setSupportMessage('');
+    setSupportResponse(null);
   };
 
   return (
@@ -345,15 +396,25 @@ const App: React.FC = () => {
         </div>
 
         {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <Reorder.Group 
+          axis="y"
+          values={filteredSymbols}
+          onReorder={handleReorder}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        >
           {filteredSymbols.map(symbol => (
-            <MarketCard 
-              key={symbol.id}
-              symbol={symbol}
-              analysis={state.analyses[symbol.id]}
-              onRefresh={handleAnalyze}
-              onRemove={handleRemoveSymbol}
-            />
+            <Reorder.Item 
+              key={symbol.id} 
+              value={symbol}
+              className="list-none"
+            >
+              <MarketCard 
+                symbol={symbol}
+                analysis={state.analyses[symbol.id]}
+                onRefresh={handleAnalyze}
+                onRemove={handleRemoveSymbol}
+              />
+            </Reorder.Item>
           ))}
 
           {filteredSymbols.length === 0 && (
@@ -369,24 +430,23 @@ const App: React.FC = () => {
               </button>
             </div>
           )}
-        </div>
+        </Reorder.Group>
       </main>
 
       {/* Footer */}
       <footer className={`border-t py-12 px-4 mt-auto transition-colors ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8 items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={toggleTheme}
-              className={`p-3 rounded-2xl border transition-all shadow-lg active:scale-95 ${theme === 'dark' ? 'bg-slate-900 border-slate-800 text-yellow-400 hover:border-yellow-400/50 shadow-slate-950/40' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 shadow-slate-200/40'}`}
-              title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {theme === 'dark' ? <Sun className="w-5 h-5 stroke-[2.5px]" /> : <Moon className="w-5 h-5 stroke-[2.5px]" />}
-            </button>
+          <div className="flex items-center gap-6">
             <div className="flex flex-col">
               <span className={`text-sm font-black tracking-widest ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>PULSER AI</span>
               <span className="text-[10px] text-slate-500 font-medium">© 2026 AI Intel.</span>
             </div>
+            <button 
+              onClick={() => setIsSupportModalOpen(true)}
+              className={`flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-all ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              <Mail className="w-4 h-4" /> Contact Support
+            </button>
           </div>
           
           <p className={`text-[11px] italic leading-relaxed max-w-2xl text-center md:text-right transition-colors ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
@@ -425,6 +485,79 @@ const App: React.FC = () => {
               >
                 Maybe Later
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSupportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className={`border rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in duration-300 transition-colors ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+            <div className="text-center space-y-6">
+              <div className={`w-16 h-16 rounded-3xl flex items-center justify-center mx-auto ${supportResponse ? 'bg-emerald-500/10' : 'bg-blue-500/10'}`}>
+                {supportResponse ? (
+                  <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                ) : (
+                  <Mail className="w-8 h-8 text-blue-500" />
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                  {supportResponse ? 'Success' : 'Contact Support'}
+                </h2>
+                <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {supportResponse 
+                    ? 'We have received your message.' 
+                    : 'Have questions or feedback? Our team is here to help.'}
+                </p>
+              </div>
+
+              {supportResponse ? (
+                <div className={`p-4 rounded-2xl text-left text-sm font-medium border ${theme === 'dark' ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-700'}`}>
+                  {supportResponse}
+                </div>
+              ) : (
+                <textarea 
+                  placeholder="Describe your issue or feedback here..."
+                  value={supportMessage}
+                  onChange={(e) => setSupportMessage(e.target.value)}
+                  disabled={isSendingSupport}
+                  className={`w-full h-32 p-4 rounded-2xl border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white placeholder:text-slate-600' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
+                />
+              )}
+
+              <div className="flex items-center gap-3">
+                {supportResponse ? (
+                  <button 
+                    onClick={closeSupportModal}
+                    className="w-full py-4 rounded-2xl bg-emerald-500 text-white font-bold transition-all hover:bg-emerald-600 active:scale-95"
+                  >
+                    Got it
+                  </button>
+                ) : (
+                  <>
+                    <button 
+                      onClick={handleSupportSubmit}
+                      disabled={isSendingSupport || !supportMessage.trim()}
+                      className={`flex-1 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:grayscale ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/30' : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/30'}`}
+                    >
+                      {isSendingSupport ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>Ok <Send className="w-4 h-4 ml-1" /></>
+                      )}
+                    </button>
+                    <button 
+                      onClick={closeSupportModal}
+                      disabled={isSendingSupport}
+                      className={`flex-1 py-4 rounded-2xl font-bold transition-all active:scale-95 border ${theme === 'dark' ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'}`}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

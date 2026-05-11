@@ -31,8 +31,16 @@ export class PulserAgent {
       const apiKey = await this.getApiKey();
       const ai = new GoogleGenAI({ apiKey });
 
+      const currentDate = new Date().toLocaleDateString('en-US', { 
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+      });
+
       const prompt = `Perform an institutional-grade deep dive for ${symbol.symbol} (${symbol.name}) in the ${symbol.type} market. 
-      Focus on VERY RECENT news, earnings, and institutional sentiment.
+      Current Date: ${currentDate}.
+      
+      STRICT REQUIREMENT: Focus EXCLUSIVELY on news, earnings, and institutional sentiment from the last 48 hours. 
+      The "news" array in your JSON output MUST only contain items published within the last 2 days. 
+      If no significant news exists within 48 hours, mention that in the summary but still provide the latest 2-3 news links from the most recent period available (stating their dates clearly).
       
       Requirements for output (JSON ONLY):
       {
@@ -61,13 +69,16 @@ export class PulserAgent {
           "employees": "count",
           "peers": [{"name": "PeerName", "pe": "PE", "marketCap": "Value"}],
           "expansionPlans": ["Points about growth"],
-          "news": [{"title": "headline", "url": "link", "date": "date"}]
+          "news": [{"title": "headline", "url": "link", "date": "date (must be within last 2 days if available)"}]
         }
       }`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }]
+        }
       });
 
       const text = response.text || "";

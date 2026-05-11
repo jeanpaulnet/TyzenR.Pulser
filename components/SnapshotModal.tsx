@@ -2,7 +2,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { MarketSymbol, PulserAnalysis, MarketType } from '../types';
-import { X, TrendingUp, BarChart, Info, Users, Zap, Search, Activity, Target, ExternalLink, Newspaper, RefreshCw } from 'lucide-react';
+import { X, TrendingUp, BarChart, Info, Users, Zap, Search, Activity, Target, ExternalLink, Newspaper, RefreshCw, Clock } from 'lucide-react';
 import { BarChart as ReChartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface SnapshotModalProps {
@@ -384,12 +384,15 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
               </div>
 
               {/* Latest News Section */}
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-rose-500/10 rounded-xl text-rose-500">
-                    <Newspaper className="w-4 h-4" />
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
+                <div className="flex flex-col gap-1 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-rose-500/10 rounded-xl text-rose-500">
+                      <Newspaper className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200">Latest Intelligence</h3>
                   </div>
-                  <h3 className="font-bold text-slate-800 dark:text-slate-200">Latest Intelligence</h3>
+                  <p className="text-[9px] font-black uppercase text-rose-500 tracking-tighter opacity-80">Focus: Last 48 Hours</p>
                 </div>
                 <div className="space-y-3">
                   {snapshot?.news && snapshot.news.length > 0 ? snapshot.news.map((item, idx) => (
@@ -398,18 +401,27 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                       href={item.url} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="block p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group"
+                      className="block p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group relative overflow-hidden"
                     >
+                      <div className="absolute top-0 right-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <ExternalLink className="w-2.5 h-2.5 text-indigo-500" />
+                      </div>
                       <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 line-clamp-2 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
                         {item.title}
                       </p>
                       <div className="mt-2 flex justify-between items-center text-[9px] font-black uppercase text-slate-400">
-                        <span>{item.date}</span>
-                        <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" />
+                          {item.date}
+                        </span>
+                        {/* Optional: Add "NEW" tag if date mentions "hours ago" or "today" */}
+                        {(item.date.toLowerCase().includes('hour') || item.date.toLowerCase().includes('today') || item.date.toLowerCase().includes('1 day')) && (
+                          <span className="px-1.5 py-0.5 bg-rose-500/10 text-rose-500 rounded-md text-[8px] animate-pulse">NEW</span>
+                        )}
                       </div>
                     </a>
                   )) : (
-                    <p className="text-xs text-slate-500 italic">No recent headlines found for this asset.</p>
+                    <p className="text-xs text-slate-500 italic px-2">No recent headlines found for this asset within the last 48 hours.</p>
                   )}
                 </div>
               </div>

@@ -49,11 +49,11 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-2xl transition-colors">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-          <h2 className="text-xl font-bold flex items-center gap-2 text-slate-800 dark:text-white">
-            <Plus className="w-5 h-5 text-blue-500" /> Add New Symbol
+        <div className="p-6 border-b bg-gradient-to-r from-purple-600 to-indigo-700 dark:from-slate-800 dark:to-slate-950 border-purple-500 dark:border-slate-800 flex justify-between items-center">
+          <h2 className="text-xl font-bold flex items-center gap-2 text-white">
+            <Plus className="w-5 h-5 text-white/80" /> Add New Symbol
           </h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400">
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
