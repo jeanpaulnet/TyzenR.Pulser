@@ -38,38 +38,40 @@ export class PulserAgent {
       const prompt = `Perform an institutional-grade deep dive for ${symbol.symbol} (${symbol.name}) in the ${symbol.type} market. 
       Current Date: ${currentDate}.
       
-      STRICT REQUIREMENT: Focus EXCLUSIVELY on news, earnings, and institutional sentiment from the last 48 hours. 
-      The "news" array in your JSON output MUST only contain items published within the last 2 days. 
-      If no significant news exists within 48 hours, mention that in the summary but still provide the latest 2-3 news links from the most recent period available (stating their dates clearly).
+      CRITICAL INSTRUCTION: You MUST use the Google Search tool to find "LIVE" news from the last 24-48 hours. 
+      Analyze: Recent price action catalysts, earnings reports, regulatory news, and analyst sentiment.
       
-      Requirements for output (JSON ONLY):
+      URL POLICY: All URLs in your response MUST be verifiable, live article links found in your search results. 
+      Do NOT provide dead links or generic homepages. If you provide a link, it must be the direct article.
+      
+      JSON OUTPUT FORMAT:
       {
         "shortTermTrend": "BUY" | "SELL" | "HOLD" | "NEUTRAL",
         "longTermTrend": "BUY" | "SELL" | "HOLD" | "NEUTRAL",
         "confidenceScore": number (0-100),
-        "summary": "Narrative covering why this trend exists.",
-        "sources": [{"title": "News Source", "url": "URL"}],
+        "summary": "Detailed narrative covering catalysts and trends.",
+        "sources": [{"title": "Headline or Site", "url": "DIRECT_URL"}],
         "snapshot": {
-          "intrinsicValue": "string",
-          "roe": "string percentage",
-          "roce": "string percentage",
-          "pbRatio": "number",
-          "peRatio": "number",
-          "growthRate3Y": "string",
-          "growthRate5Y": "string",
-          "debtToEquity": "ratio",
-          "marginOfSafety": "percent",
-          "ma200": "price",
-          "ma50": "price",
-          "rsi": "number",
-          "technicalCommentary": "brief technical summary",
-          "about": "detailed company profile",
-          "tradingViewTicker": "STRICT tradingview compatible ticker symbol (e.g. NVDA for Nvidia, AAPL for Apple)",
-          "founded": "year",
-          "employees": "count",
-          "peers": [{"name": "PeerName", "pe": "PE", "marketCap": "Value"}],
-          "expansionPlans": ["Points about growth"],
-          "news": [{"title": "headline", "url": "link", "date": "date (must be within last 2 days if available)"}]
+          "intrinsicValue": "Value",
+          "roe": "ROE%",
+          "roce": "ROCE%",
+          "pbRatio": "PB",
+          "peRatio": "PE",
+          "growthRate3Y": "3Y%",
+          "growthRate5Y": "5Y%",
+          "debtToEquity": "Ratio",
+          "marginOfSafety": "Safety%",
+          "ma200": "Price",
+          "ma50": "Price",
+          "rsi": "Value",
+          "technicalCommentary": "Analysis of key technical levels",
+          "about": "Detailed background",
+          "tradingViewTicker": "TICKER",
+          "founded": "Year",
+          "employees": "Count",
+          "peers": [{"name": "Peer", "pe": "PE", "marketCap": "MCap"}],
+          "expansionPlans": ["Strategic points"],
+          "news": [{"title": "Article Headline", "url": "ARTICLE_URL", "date": "Published Date"}]
         }
       }`;
 
@@ -85,14 +87,83 @@ export class PulserAgent {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       const data = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(text);
 
+      // Extract high-quality grounding metadata
+      const candidate = (response as any).candidates?.[0];
+      const groundingMetadata = (candidate as any)?.groundingMetadata;
+      const chunks = groundingMetadata?.groundingChunks || [];
+      
+      // Use grounding metadata to override/supplement links found by the model
+      const verifiedLinks = chunks
+        .filter((c: any) => c.web?.uri)
+        .map((c: any) => ({
+          title: c.web.title || "Verified Source",
+          url: c.web.uri
+        }));
+
+      // Validation function to detect potential hallucinated or generic URLs
+      const isDeadLink = (url: string) => {
+        if (!url) return true;
+        if (!url.startsWith('http')) return true;
+        const lowUrl = url.toLowerCase();
+        // Detect common root domains or placeholders instead of direct articles
+        const placeholders = ['yahoo.com', 'reuters.com', 'bloomberg.com', 'cnbc.com', 'investing.com', 'marketwatch.com'];
+        const isRoot = placeholders.some(p => lowUrl === `https://${p}` || lowUrl === `http://${p}` || lowUrl === `https://www.${p}` || lowUrl === `http://www.${p}`);
+        return isRoot || url.length < 25; // Articles are usually long URLs
+      };
+
+      // Sanitize News (ensure links are real)
+      const rawNews = data.snapshot?.news || data.news || [];
+      const sanitizedNews = rawNews.map((n: any) => {
+        let url = n.url || n.uri || '';
+        
+        // Try to find a better URL from grounding data if the provided one looks generic
+        const betterLink = verifiedLinks.find((sl: any) => 
+          sl.title.toLowerCase().includes(n.title.toLowerCase()) || 
+          n.title.toLowerCase().includes(sl.title.toLowerCase())
+        );
+        
+        if (betterLink) {
+          url = betterLink.url;
+        }
+
+        if (isDeadLink(url)) {
+          url = `https://www.google.com/search?q=${encodeURIComponent(n.title + " " + symbol.symbol)}`;
+        }
+        return { ...n, url };
+      });
+
+      // Sanitize Sources
+      const rawSources = data.sources || [];
+      const sanitizedSources = rawSources.map((s: any) => {
+        let url = s.url || s.uri || '';
+        if (url && !url.startsWith('http')) url = `https://${url}`;
+        
+        const betterLink = verifiedLinks.find((vl: any) => 
+          vl.title.toLowerCase().includes(s.title.toLowerCase()) || 
+          s.title.toLowerCase().includes(vl.title.toLowerCase())
+        );
+        if (betterLink) url = betterLink.url;
+
+        if (isDeadLink(url)) {
+          url = `https://www.google.com/search?q=${encodeURIComponent(s.title + " " + symbol.symbol)}`;
+        }
+        return { title: s.title, url };
+      });
+
       return {
         symbolId: symbol.id,
         shortTermTrend: (data.shortTermTrend || Sentiment.NEUTRAL) as Sentiment,
         longTermTrend: (data.longTermTrend || Sentiment.NEUTRAL) as Sentiment,
         confidenceScore: data.confidenceScore || 50,
         summary: data.summary || "No summary available.",
-        sources: (data.sources || []).map((s: any) => ({ title: s.title, uri: s.url || s.uri })),
-        snapshot: data.snapshot,
+        sources: [
+          ...verifiedLinks,
+          ...sanitizedSources,
+        ].filter((v, i, a) => a.findIndex(t => t.url === v.url) === i).slice(0, 5),
+        snapshot: {
+          ...data.snapshot,
+          news: sanitizedNews.slice(0, 3)
+        },
         lastUpdated: new Date().toISOString(),
         isAnalyzing: false
       };

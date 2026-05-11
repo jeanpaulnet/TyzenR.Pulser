@@ -27,7 +27,7 @@ export interface PulserAnalysis {
   longTermTrend: Sentiment;
   confidenceScore: number; // 0-100
   summary: string;
-  sources: { title: string; uri: string }[];
+  sources: { title: string; url: string }[];
   lastUpdated: string;
   isAnalyzing: boolean;
   currentPrice?: string;

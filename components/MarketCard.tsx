@@ -150,7 +150,7 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
                   {analysis.sources.map((source, idx) => (
                     <a 
                       key={idx} 
-                      href={source.uri} 
+                      href={source.url} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="flex items-center gap-1 text-[9px] font-bold text-slate-600 dark:text-slate-500 hover:text-purple-600 dark:hover:text-emerald-400 transition-colors bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-1.5 rounded-lg"

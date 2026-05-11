@@ -7,7 +7,7 @@ import MarketCard from './components/MarketCard';
 import AddSymbolModal from './components/AddAssetModal';
 import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon, LogOut, Mail, Send, CheckCircle2, GripHorizontal } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode';
-import { Reorder } from 'motion/react';
+import { Reorder, useDragControls } from 'motion/react';
 
 declare global {
   interface Window {
@@ -126,7 +126,7 @@ const App: React.FC = () => {
     const initGoogle = () => {
       if (window.google) {
         window.google.accounts.id.initialize({
-          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "875002260614-gj79e389kmlespuqtnm52hf8rfnv4k8i.apps.googleusercontent.com",
+          client_id: "875002260614-gj79e389kmlespuqtnm52hf8rfnv4k8i.apps.googleusercontent.com",
           callback: handleCredentialResponse,
           ux_mode: "popup",
           auto_select: false
@@ -239,17 +239,7 @@ const App: React.FC = () => {
   });
 
   const handleReorder = (newOrder: MarketSymbol[]) => {
-    setState(prev => {
-      const filteredIds = new Set(filteredSymbols.map(s => s.id));
-      let filteredIdx = 0;
-      const updatedSymbols = prev.symbols.map(s => {
-        if (filteredIds.has(s.id)) {
-          return newOrder[filteredIdx++];
-        }
-        return s;
-      });
-      return { ...prev, symbols: updatedSymbols };
-    });
+    setState(prev => ({ ...prev, symbols: newOrder }));
   };
 
   const handleSupportSubmit = async () => {
@@ -299,7 +289,7 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className={`text-2xl font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-white'}`}>Pulser AI</h1>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium whitespace-nowrap">AI Powered News Sentiments + Fundamental + Technicals</p>
+              <p className="text-[10px] text-[#f5f5f5] font-medium whitespace-nowrap">AI Powered News Sentiments + Fundamental + Technicals</p>
             </div>
           </div>
 
@@ -394,30 +384,47 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Dashboard Grid */}
-        <Reorder.Group 
-          axis="y"
-          values={filteredSymbols}
-          onReorder={handleReorder}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-        >
-          {filteredSymbols.map(symbol => (
-            <Reorder.Item 
-              key={symbol.id} 
-              value={symbol}
-              className="list-none"
+        <div className="w-full">
+          {searchQuery || filterType !== 'ALL' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredSymbols.map(symbol => (
+                <MarketCard 
+                  key={symbol.id}
+                  symbol={symbol}
+                  analysis={state.analyses[symbol.id]}
+                  onRefresh={handleAnalyze}
+                  onRemove={handleRemoveSymbol}
+                />
+              ))}
+            </div>
+          ) : (
+            <Reorder.Group 
+              axis="y"
+              values={state.symbols}
+              onReorder={handleReorder}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             >
-              <MarketCard 
-                symbol={symbol}
-                analysis={state.analyses[symbol.id]}
-                onRefresh={handleAnalyze}
-                onRemove={handleRemoveSymbol}
-              />
-            </Reorder.Item>
-          ))}
+              {state.symbols.map(symbol => (
+                <Reorder.Item 
+                  key={symbol.id} 
+                  value={symbol}
+                  className="list-none cursor-default"
+                  dragListener={true}
+                  whileDrag={{ scale: 1.02, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }}
+                >
+                  <MarketCard 
+                    symbol={symbol}
+                    analysis={state.analyses[symbol.id]}
+                    onRefresh={handleAnalyze}
+                    onRemove={handleRemoveSymbol}
+                  />
+                </Reorder.Item>
+              ))}
+            </Reorder.Group>
+          )}
+        </div>
 
-          {filteredSymbols.length === 0 && (
+        {filteredSymbols.length === 0 && (
             <div className={`col-span-full py-24 flex flex-col items-center justify-center rounded-[3rem] border border-dashed ${theme === 'dark' ? 'text-slate-500 bg-slate-900/30 border-slate-800' : 'text-slate-400 bg-slate-100/50 border-slate-200'}`}>
               <Globe className="w-16 h-16 mb-6 opacity-10" />
               <p className={`text-xl font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Market Silence</p>
@@ -430,7 +437,6 @@ const App: React.FC = () => {
               </button>
             </div>
           )}
-        </Reorder.Group>
       </main>
 
       {/* Footer */}
