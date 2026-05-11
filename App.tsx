@@ -202,6 +202,26 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const handleRefreshPrice = useCallback(async (symbol: MarketSymbol) => {
+    try {
+      const { price, currency, source } = await pulser.getLivePrice(symbol);
+      setState(prev => ({
+        ...prev,
+        analyses: {
+          ...prev.analyses,
+          [symbol.id]: {
+            ...(prev.analyses[symbol.id] || {}),
+            currentPrice: price,
+            currencySymbol: currency,
+            lastUpdated: new Date().toISOString(),
+          } as PulserAnalysis
+        }
+      }));
+    } catch (error) {
+      console.error('Failed to refresh price:', error);
+    }
+  }, []);
+
   const handleScanAll = async () => {
     for (const symbol of state.symbols) {
       await handleAnalyze(symbol);
@@ -279,17 +299,19 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen flex flex-col selection:bg-emerald-500/30 transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+    <div className={`min-h-screen flex flex-col selection:bg-emerald-500/30 transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-gradient-to-b from-white to-[#f5f5f5] text-slate-900'}`}>
       {/* Header */}
-      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${theme === 'dark' ? 'bg-gradient-to-r from-slate-800 to-slate-950 border-slate-800' : 'bg-gradient-to-r from-purple-600 to-indigo-700 border-purple-500'}`}>
+      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${theme === 'dark' ? 'bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-950 border-zinc-800' : 'bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 border-zinc-700'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2 rounded-xl shadow-lg backdrop-blur-sm">
+            <div className="bg-white/10 p-2 rounded-xl shadow-lg backdrop-blur-sm border border-white/5">
               <Zap className="w-6 h-6 text-white fill-current" />
             </div>
             <div>
-              <h1 className={`text-2xl font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-white'}`}>Pulser AI</h1>
-              <p className="text-[10px] text-[#f5f5f5] font-medium whitespace-nowrap">AI Powered News Sentiments + Fundamental + Technicals</p>
+              <h1 className="text-2xl font-bold tracking-tight text-white">
+                Pulser <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent italic">AI</span>
+              </h1>
+              <p className="text-[10px] text-slate-400 font-medium whitespace-nowrap">AI Powered News Sentiments + Fundamental + Technicals</p>
             </div>
           </div>
 
@@ -338,9 +360,9 @@ const App: React.FC = () => {
           <div className="w-full md:w-auto">
             <button 
               onClick={() => setIsAddModalOpen(true)}
-              className={`w-full md:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-3xl border font-black text-sm uppercase tracking-widest transition-all whitespace-nowrap shadow-xl active:scale-95 ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 border-blue-500 shadow-blue-600/30 text-white' : 'bg-indigo-600 hover:bg-indigo-700 border-indigo-500 shadow-indigo-600/30 text-white'}`}
+              className={`w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl border font-black text-xs uppercase tracking-widest transition-all whitespace-nowrap shadow-xl active:scale-95 ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 border-blue-500 shadow-blue-600/30 text-white' : 'bg-indigo-600 hover:bg-indigo-700 border-indigo-500 shadow-indigo-600/30 text-white'}`}
             >
-              <Plus className="w-5 h-5" /> Add Symbol
+              <Plus className="w-4 h-4" /> Add Symbol
             </button>
           </div>
 
@@ -393,6 +415,7 @@ const App: React.FC = () => {
                   symbol={symbol}
                   analysis={state.analyses[symbol.id]}
                   onRefresh={handleAnalyze}
+                  onRefreshPrice={handleRefreshPrice}
                   onRemove={handleRemoveSymbol}
                 />
               ))}
@@ -416,6 +439,7 @@ const App: React.FC = () => {
                     symbol={symbol}
                     analysis={state.analyses[symbol.id]}
                     onRefresh={handleAnalyze}
+                    onRefreshPrice={handleRefreshPrice}
                     onRemove={handleRemoveSymbol}
                   />
                 </Reorder.Item>
@@ -444,7 +468,9 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8 items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="flex flex-col">
-              <span className={`text-sm font-black tracking-widest ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>PULSER AI</span>
+              <span className={`text-sm font-black tracking-widest ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
+                PULSER <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent">AI</span>
+              </span>
               <span className="text-[10px] text-slate-500 font-medium">© 2026 AI Intel.</span>
             </div>
             <button 

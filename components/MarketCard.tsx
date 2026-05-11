@@ -9,10 +9,11 @@ interface MarketCardProps {
   symbol: MarketSymbol;
   analysis?: PulserAnalysis;
   onRefresh: (symbol: MarketSymbol) => void;
+  onRefreshPrice?: (symbol: MarketSymbol) => void;
   onRemove: (id: string) => void;
 }
 
-const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis, onRefresh, onRemove }) => {
+const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis, onRefresh, onRefreshPrice, onRemove }) => {
   const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
   const isAnalyzing = analysis?.isAnalyzing;
 
@@ -81,9 +82,20 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
                 {marketSymbol.symbol}
               </h3>
               {analysis?.currentPrice && !isAnalyzing && (
-                <span className="text-xl font-bold text-white pb-0.5">
-                  {marketSymbol.region === 'INDIA' ? '₹' : '$'}{analysis.currentPrice}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="text-xl font-bold text-white pb-0.5">
+                    {analysis.currencySymbol || (marketSymbol.region === 'INDIA' ? '₹' : '$')}{analysis.currentPrice}
+                  </span>
+                  {onRefreshPrice && (
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); onRefreshPrice(marketSymbol); }}
+                      className="p-1 hover:bg-white/20 rounded-md transition-colors text-white/50 hover:text-white"
+                      title="Refresh Price Only"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
               )}
             </div>
             <p className="text-xs text-purple-100 dark:text-slate-500 truncate max-w-[140px] font-medium">{marketSymbol.name}</p>

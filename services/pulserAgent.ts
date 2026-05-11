@@ -24,6 +24,39 @@ export class PulserAgent {
   }
 
   /**
+   * Validates if a symbol exists in the chosen market/region.
+   */
+  async validateSymbol(symbol: string, type: string, region: string): Promise<{ isValid: boolean; name?: string }> {
+    try {
+      const apiKey = await this.getApiKey();
+      const ai = new GoogleGenAI({ apiKey });
+
+      const prompt = `Quick verification: Does the market symbol "${symbol}" exist in the ${region} region as a ${type}? 
+      Use Google Search to confirm. 
+      If it exists, return EXACTLY this JSON: {"isValid": true, "name": "Company/Asset Full Name"}
+      If it does not exist or is highly likely incorrect, return: {"isValid": false}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }]
+        }
+      });
+
+      const text = response.text || "";
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const data = jsonMatch ? JSON.parse(jsonMatch[0]) : { isValid: false };
+      
+      return data;
+    } catch (error) {
+      console.error('Validation error:', error);
+      // Fail open to avoid blocking users if AI limits are hit, but we should be cautious
+      return { isValid: true, name: symbol }; 
+    }
+  }
+
+  /**
    * Analyzes market sentiment (Short & Long Term) using search-grounded AI.
    */
   async analyzeSymbol(symbol: MarketSymbol): Promise<PulserAnalysis> {
@@ -35,8 +68,14 @@ export class PulserAgent {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
       });
 
+      const priceSourceHint = symbol.type === 'CRYPTO' 
+        ? "CRITICAL: For currentPrice/CMP, strictly prioritize data from coinmarketcap.com." 
+        : "For currentPrice/CMP, use real-time data from financial news or exchange sites.";
+
       const prompt = `Perform an institutional-grade deep dive for ${symbol.symbol} (${symbol.name}) in the ${symbol.type} market. 
       Current Date: ${currentDate}.
+      
+      ${priceSourceHint}
       
       CRITICAL INSTRUCTION: You MUST use the Google Search tool to find "LIVE" news from the last 24-48 hours. 
       Analyze: Recent price action catalysts, earnings reports, regulatory news, and analyst sentiment.
@@ -50,9 +89,14 @@ export class PulserAgent {
         "longTermTrend": "BUY" | "SELL" | "HOLD" | "NEUTRAL",
         "confidenceScore": number (0-100),
         "summary": "Detailed narrative covering catalysts and trends.",
+        "currentPrice": "Price (e.g., 150.50 or 50000.00)",
+        "currencySymbol": "Currency (e.g., $ or ₹)",
         "sources": [{"title": "Headline or Site", "url": "DIRECT_URL"}],
         "snapshot": {
           "intrinsicValue": "Value",
+          "cmp": "Current Market Price",
+          "high52w": "52-Week High Value",
+          "low52w": "52-Week Low Value",
           "roe": "ROE%",
           "roce": "ROCE%",
           "pbRatio": "PB",
@@ -156,6 +200,8 @@ export class PulserAgent {
         longTermTrend: (data.longTermTrend || Sentiment.NEUTRAL) as Sentiment,
         confidenceScore: data.confidenceScore || 50,
         summary: data.summary || "No summary available.",
+        currentPrice: data.currentPrice || "0.00",
+        currencySymbol: data.currencySymbol || (symbol.region === 'INDIA' ? '₹' : '$'),
         sources: [
           ...verifiedLinks,
           ...sanitizedSources,
@@ -183,23 +229,45 @@ export class PulserAgent {
   }
 
   /**
-   * Fetches latest price data from open APIs.
+   * Fetches latest price data using Gemini Search grounding.
    */
-  async getLivePrice(symbol: MarketSymbol): Promise<{ price: string; source: string }> {
+  async getLivePrice(symbol: MarketSymbol): Promise<{ price: string; currency: string; source: string }> {
     try {
-      if (symbol.type === 'CRYPTO') {
-        const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol.symbol}USDT`);
-        if (response.ok) {
-          const data = await response.json();
-          return { price: parseFloat(data.price).toFixed(2), source: 'Binance' };
-        }
-      }
+      const apiKey = await this.getApiKey();
+      const ai = new GoogleGenAI({ apiKey });
+
+      const sourcePreference = symbol.type === 'CRYPTO' 
+        ? "PRIORITIZE fetching the current price from coinmarketcap.com." 
+        : "Use Google Finance, Yahoo Finance, or local exchange websites.";
+
+      const prompt = `Find the CURRENT LIVE MARKET PRICE (CMP) for ${symbol.symbol} (${symbol.name}) in the ${symbol.region} ${symbol.type} market.
+      ${sourcePreference}
       
-      // Fallback or generic fetch
-      return { price: (Math.random() * 1000).toFixed(2), source: 'Market Aggregate' };
+      Return ONLY a JSON object:
+      {"price": "number as string", "currency": "USD/INR/etc", "source": "Name of source"}
+      
+      If you cannot find a price, return: {"price": "0.00", "currency": "USD", "source": "Not Found"}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }]
+        }
+      });
+
+      const text = response.text || "";
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const data = jsonMatch ? JSON.parse(jsonMatch[0]) : { price: "0.00", currency: "USD", source: "Unknown" };
+      
+      return {
+        price: data.price,
+        currency: data.currency,
+        source: data.source
+      };
     } catch (error) {
       console.error('Price fetch error:', error);
-      throw error;
+      return { price: "0.00", currency: "USD", source: "Error" };
     }
   }
 }

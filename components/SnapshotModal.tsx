@@ -169,11 +169,19 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
             <div className="space-y-6">
               {/* Value Investing */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500">
-                    <Zap className="w-4 h-4" />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500">
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200">Value Investing</h3>
                   </div>
-                  <h3 className="font-bold text-slate-800 dark:text-slate-200">Value Investing</h3>
+                  <div className="px-3 py-1 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-xl border border-indigo-500/20 flex items-center gap-2">
+                    <span className="text-[8px] text-indigo-400 dark:text-indigo-400 uppercase font-black">CMP</span>
+                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                      {analysis?.currencySymbol || (symbol.region === 'INDIA' ? '₹' : '$')}{snapshot?.cmp || analysis?.currentPrice || '—'}
+                    </span>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
@@ -207,6 +215,14 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                   <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
                     <p className="text-[9px] text-slate-400 uppercase font-black mb-0.5">Margin of Safety</p>
                     <p className="text-sm font-bold text-emerald-500">{snapshot?.marginOfSafety || '—'}</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                    <p className="text-[9px] text-emerald-500 uppercase font-black mb-0.5">52W High</p>
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{snapshot?.high52w || '—'}</p>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                    <p className="text-[9px] text-rose-500 uppercase font-black mb-0.5">52W Low</p>
+                    <p className="text-sm font-bold text-rose-600 dark:text-rose-400">{snapshot?.low52w || '—'}</p>
                   </div>
                 </div>
               </div>

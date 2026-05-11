@@ -35,6 +35,9 @@ export interface PulserAnalysis {
   // Snapshot Data
   snapshot?: {
     intrinsicValue?: string;
+    cmp?: string;
+    high52w?: string;
+    low52w?: string;
     roe?: string;
     roce?: string;
     pbRatio?: string;
