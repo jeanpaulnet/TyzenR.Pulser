@@ -86,6 +86,20 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
 
   const exchangeSymbol = getTradingViewExchangeSymbol();
 
+  const getRatingColor = (rating: string) => {
+    const r = rating.toLowerCase();
+    if (r.includes('buy') || r.includes('outperform') || r.includes('overweight') || r.includes('positive')) return 'text-emerald-500';
+    if (r.includes('sell') || r.includes('underperform') || r.includes('underweight') || r.includes('negative')) return 'text-rose-500';
+    return 'text-slate-500 dark:text-slate-400';
+  };
+
+  const getRatingBadgeClass = (rating: string) => {
+    const r = rating.toLowerCase();
+    if (r.includes('buy') || r.includes('outperform') || r.includes('overweight') || r.includes('positive')) return 'bg-emerald-500/10 border-emerald-500/20';
+    if (r.includes('sell') || r.includes('underperform') || r.includes('underweight') || r.includes('negative')) return 'bg-rose-500/10 border-rose-500/20';
+    return 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800/40';
+  };
+
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-10 pointer-events-auto">
       <div 
@@ -148,7 +162,16 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
             </div>
             <div>
               <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-                {symbol.symbol} <span className="text-slate-400 dark:text-slate-500 font-medium text-lg">— {symbol.name}</span>
+                {symbol.symbol} 
+                <button 
+                  onClick={handleRefresh}
+                  disabled={isRefreshing || analysis?.isAnalyzing}
+                  className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-all text-slate-400 hover:text-indigo-500 disabled:opacity-50"
+                  title="Refresh Intelligence Pulse"
+                >
+                  <RefreshCw className={`w-4 h-4 ${(isRefreshing || analysis?.isAnalyzing) ? 'animate-spin text-indigo-500' : ''}`} />
+                </button>
+                <span className="text-slate-400 dark:text-slate-500 font-medium text-lg truncate">— {symbol.name}</span>
               </h2>
               <p className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest">Empower Your Decisions</p>
             </div>
@@ -365,14 +388,14 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                 </div>
                 <div className="space-y-3 mb-4">
                   {snapshot?.analystViews && snapshot.analystViews.length > 0 ? snapshot.analystViews.slice(0, 3).map((view, idx) => (
-                    <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800/40">
+                    <div key={idx} className={`p-3 rounded-xl border transition-colors ${getRatingBadgeClass(view.rating)}`}>
                       <div className="flex justify-between items-start mb-1">
                         <span className="text-[10px] font-black uppercase text-indigo-500">{view.firm}</span>
                         <span className="text-[9px] font-bold text-slate-400">{view.date}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 capitalize">{view.rating}</span>
-                        <span className="text-xs font-black text-emerald-500">{view.targetPrice}</span>
+                        <span className={`text-xs font-bold capitalize ${getRatingColor(view.rating)}`}>{view.rating}</span>
+                        <span className="text-xs font-black text-slate-700 dark:text-slate-200">{view.targetPrice}</span>
                       </div>
                     </div>
                   )) : (
@@ -516,7 +539,6 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
              Analyzed using Pulser AI Global Search grounding • Synced: {analysis?.lastUpdated ? new Date(analysis.lastUpdated).toLocaleString() : 'Just now'}
            </p>
            <div className="flex gap-4">
-              <button className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-colors">Export PDF</button>
               <button 
                 onClick={onClose}
                 className="bg-slate-950 dark:bg-white text-white dark:text-slate-950 px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:opacity-80 transition-all"

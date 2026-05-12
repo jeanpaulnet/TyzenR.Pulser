@@ -354,7 +354,7 @@ const App: React.FC = () => {
               <h1 className="text-2xl font-bold tracking-tight text-white flex items-baseline gap-1">
                 Pulser <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent italic inline-block pr-1">AI</span>
               </h1>
-              <p className="text-[10px] text-slate-400 font-medium whitespace-nowrap">AI Powered Market Sentiments + Fundamentals + Technicals</p>
+              <p className="text-[10px] text-slate-400 font-medium whitespace-nowrap">Empower your investment decisions with AI</p>
             </div>
           </div>
 
