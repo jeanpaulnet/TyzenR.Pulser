@@ -207,6 +207,28 @@ export class PulserAgent {
         return { title: s.title, url };
       });
 
+      // Sanitize Growth Data (ensure numeric values for Recharts)
+      const rawGrowth = data.snapshot?.growthData || [];
+      const sanitizedGrowth = rawGrowth.map((g: any) => {
+        const sanitizeValue = (val: any) => {
+          if (typeof val === 'number') return val;
+          if (typeof val === 'string') {
+            // Remove non-numeric chars except decimal and minus
+            const cleaned = val.replace(/[^0-9.-]/g, '');
+            const parsed = parseFloat(cleaned);
+            return isNaN(parsed) ? 0 : parsed;
+          }
+          return 0;
+        };
+
+        return {
+          year: String(g.year || g.Year || ''),
+          revenue: sanitizeValue(g.revenue || g.Revenue || 0),
+          profit: sanitizeValue(g.profit || g.Profit || g.NetIncome || 0),
+          growth: sanitizeValue(g.growth || g.Growth || 0)
+        };
+      }).filter((g: any) => g.year);
+
       return {
         symbolId: symbol.id,
         shortTermTrend: (data.shortTermTrend || Sentiment.NEUTRAL) as Sentiment,
@@ -221,6 +243,7 @@ export class PulserAgent {
         ].filter((v, i, a) => a.findIndex(t => t.url === v.url) === i).slice(0, 5),
         snapshot: {
           ...data.snapshot,
+          growthData: sanitizedGrowth,
           news: sanitizedNews.slice(0, 3)
         },
         lastUpdated: new Date().toISOString(),

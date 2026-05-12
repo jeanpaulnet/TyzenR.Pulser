@@ -3,7 +3,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { MarketSymbol, PulserAnalysis, MarketType } from '../types';
 import { X, TrendingUp, BarChart, Info, Users, Zap, Search, Activity, Target, ExternalLink, Newspaper, RefreshCw, Clock } from 'lucide-react';
-import { BarChart as ReChartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart as ReChartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
 interface SnapshotModalProps {
   symbol: MarketSymbol;
@@ -285,10 +285,10 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                   <span className="text-[10px] font-black text-slate-400 uppercase">REVENUE & PROFIT (BILLIONS {symbol.region === 'INDIA' ? '₹' : '$'})</span>
                 </div>
                 
-                <div className="flex-1 w-full min-h-[150px]">
+                <div className="w-full h-[220px] mt-2">
                   {growthData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      <ReChartsBarChart data={growthData}>
+                      <ReChartsBarChart data={growthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155 opacity-20" />
                         <XAxis 
                           dataKey="year" 
@@ -311,6 +311,12 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                             fontSize: '12px'
                           }}
                           cursor={{ fill: 'rgba(51, 65, 85, 0.1)' }}
+                        />
+                        <Legend 
+                          verticalAlign="top" 
+                          align="right" 
+                          iconSize={10}
+                          wrapperStyle={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', paddingBottom: '15px' }}
                         />
                         <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
                         <Bar dataKey="profit" name="Profit" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
