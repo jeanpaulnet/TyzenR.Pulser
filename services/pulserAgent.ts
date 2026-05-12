@@ -81,6 +81,8 @@ export class PulserAgent {
       
       CRITICAL: For "growthData", you MUST find and include the Revenue and Profit (Net Income) for the PAST 5 CONSECUTIVE YEARS. This is the top priority for the "Growth Chart". If exact revenue/profit isn't found in one search, look for annual reports or investor presentations.
       
+      CRITICAL: For "analystViews", find the 3 most RECENT ratings (Buy/Sell/Hold) and price targets from established firms like Goldman Sachs, J.P. Morgan, Morningstar, etc.
+      
       URL POLICY: All URLs in your response MUST be verifiable, live article links found in your search results. 
       Do NOT provide dead links, 404 pages, or generic homepages. EVERY link must point to a specific, active article.
       If you are unsure if a link is still live, do not include it.
@@ -117,6 +119,7 @@ export class PulserAgent {
           "employees": "Count",
           "peers": [{"name": "Peer", "pe": "PE", "marketCap": "MCap", "pb": "PB"}],
           "peerComparison": "Detailed paragraph comparing the company's valuation (PE/PB) and performance against these specific peers.",
+          "analystViews": [{"firm": "Morningstar/Goldman", "rating": "Buy/Outperform", "targetPrice": "Price", "date": "Date"}],
           "expansionPlans": [{"plan": "Strategic point", "date": "Estimated timeline, e.g., Q4 2024"}],
           "growthData": [{"year": "2023", "revenue": 100.5, "profit": 15.2, "growth": 10.5}],
           "news": [{"title": "Article Headline", "url": "ARTICLE_URL", "date": "Published Date"}]

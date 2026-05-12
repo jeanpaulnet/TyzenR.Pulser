@@ -4,6 +4,8 @@ import { MarketSymbol, MarketType, PulserAnalysis, Sentiment } from '../types';
 import { SENTIMENT_COLORS } from '../constants';
 import { TrendingUp, TrendingDown, Minus, RefreshCw, ExternalLink, AlertCircle, Clock, Calendar, BarChart3, Fingerprint, GripVertical } from 'lucide-react';
 import SnapshotModal from './SnapshotModal';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface MarketCardProps {
   symbol: MarketSymbol;
@@ -11,11 +13,28 @@ interface MarketCardProps {
   onRefresh: (symbol: MarketSymbol) => void;
   onRefreshPrice?: (symbol: MarketSymbol) => void;
   onRemove: (id: string) => void;
+  isSortable?: boolean;
 }
 
-const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis, onRefresh, onRefreshPrice, onRemove }) => {
+const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis, onRefresh, onRefreshPrice, onRemove, isSortable }) => {
   const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
   const isAnalyzing = analysis?.isAnalyzing;
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: marketSymbol.id, disabled: !isSortable });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.8 : 1,
+  };
 
   const getSentimentIcon = (rec: Sentiment) => {
     switch (rec) {
@@ -57,13 +76,22 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
   };
 
   return (
-    <div className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] hover:border-purple-400 dark:hover:border-slate-600 transition-all group relative overflow-hidden backdrop-blur-sm shadow-sm dark:shadow-none flex flex-col">
+    <div 
+      ref={setNodeRef}
+      style={style}
+      className={`bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] hover:border-purple-400 dark:hover:border-slate-600 transition-all group relative overflow-hidden backdrop-blur-sm shadow-sm dark:shadow-none flex flex-col ${isDragging ? 'shadow-2xl scale-[1.02] rotate-1' : ''}`}
+    >
       {/* Header Area */}
-      <div className={`bg-gradient-to-br ${getHeaderGradient()} px-6 py-5 relative border-b dark:border-slate-800/40 cursor-grab active:cursor-grabbing`}>
+      <div 
+        className={`bg-gradient-to-br ${getHeaderGradient()} px-6 py-5 relative border-b dark:border-slate-800/40 ${isSortable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+        {...(isSortable ? { ...attributes, ...listeners } : {})}
+      >
         {/* Drag Handle */}
-        <div className="absolute left-2 top-1/2 -translate-y-1/2 opacity-30 group-hover:opacity-60 transition-opacity">
-          <GripVertical className="w-4 h-4 text-white" />
-        </div>
+        {isSortable && (
+          <div className="absolute left-2 top-1/2 -translate-y-1/2 opacity-30 group-hover:opacity-60 transition-opacity">
+            <GripVertical className="w-4 h-4 text-white" />
+          </div>
+        )}
 
         {/* Live Indicator */}
         {analysis?.currentPrice && !isAnalyzing && (

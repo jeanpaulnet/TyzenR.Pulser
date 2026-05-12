@@ -346,6 +346,43 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                   )}
                 </div>
               </div>
+
+              {/* Analyst Views */}
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-500">
+                      <Search className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200">Analyst Views</h3>
+                  </div>
+                </div>
+                <div className="space-y-3 mb-4">
+                  {snapshot?.analystViews && snapshot.analystViews.length > 0 ? snapshot.analystViews.slice(0, 3).map((view, idx) => (
+                    <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800/40">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-[10px] font-black uppercase text-indigo-500">{view.firm}</span>
+                        <span className="text-[9px] font-bold text-slate-400">{view.date}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200 capitalize">{view.rating}</span>
+                        <span className="text-xs font-black text-emerald-500">{view.targetPrice}</span>
+                      </div>
+                    </div>
+                  )) : (
+                    <p className="text-xs text-slate-500 italic">No recent analyst projections found.</p>
+                  )}
+                </div>
+                
+                <a 
+                  href={`https://www.tipranks.com/stocks/${symbol.symbol}/forecast`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-full items-center justify-center gap-2 py-3 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
+                >
+                  TIPRANKS FORECAST <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
             </div>
 
             {/* Column 3 */}

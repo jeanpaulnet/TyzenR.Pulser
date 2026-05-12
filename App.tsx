@@ -7,7 +7,22 @@ import MarketCard from './components/MarketCard';
 import AddSymbolModal from './components/AddAssetModal';
 import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon, LogOut, Mail, Send, CheckCircle2, GripHorizontal } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode';
-import { Reorder, useDragControls } from 'motion/react';
+import {
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  TouchSensor
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
 
 declare global {
   interface Window {
@@ -168,6 +183,38 @@ const App: React.FC = () => {
     }
   }, [isLoginModalOpen]);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setState((prev) => {
+        const oldIndex = prev.symbols.findIndex((s) => s.id === active.id);
+        const newIndex = prev.symbols.findIndex((s) => s.id === over.id);
+        return {
+          ...prev,
+          symbols: arrayMove(prev.symbols, oldIndex, newIndex),
+        };
+      });
+    }
+  };
+
   const handleAnalyze = useCallback(async (symbol: MarketSymbol) => {
     setState(prev => ({
       ...prev,
@@ -257,10 +304,6 @@ const App: React.FC = () => {
     const matchesType = filterType === 'ALL' || symbol.type === filterType;
     return matchesSearch && matchesType;
   });
-
-  const handleReorder = (newOrder: MarketSymbol[]) => {
-    setState(prev => ({ ...prev, symbols: newOrder }));
-  };
 
   const handleSupportSubmit = async () => {
     if (!supportMessage.trim()) return;
@@ -421,30 +464,30 @@ const App: React.FC = () => {
               ))}
             </div>
           ) : (
-            <Reorder.Group 
-              axis="y"
-              values={state.symbols}
-              onReorder={handleReorder}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            <DndContext 
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
             >
-              {state.symbols.map(symbol => (
-                <Reorder.Item 
-                  key={symbol.id} 
-                  value={symbol}
-                  className="list-none cursor-default"
-                  dragListener={true}
-                  whileDrag={{ scale: 1.02, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }}
-                >
-                  <MarketCard 
-                    symbol={symbol}
-                    analysis={state.analyses[symbol.id]}
-                    onRefresh={handleAnalyze}
-                    onRefreshPrice={handleRefreshPrice}
-                    onRemove={handleRemoveSymbol}
-                  />
-                </Reorder.Item>
-              ))}
-            </Reorder.Group>
+              <SortableContext 
+                items={state.symbols.map(s => s.id)}
+                strategy={rectSortingStrategy}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {state.symbols.map(symbol => (
+                    <MarketCard 
+                      key={symbol.id}
+                      symbol={symbol}
+                      analysis={state.analyses[symbol.id]}
+                      onRefresh={handleAnalyze}
+                      onRefreshPrice={handleRefreshPrice}
+                      onRemove={handleRemoveSymbol}
+                      isSortable={true}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
         </div>
 
