@@ -99,6 +99,8 @@ export class PulserAgent {
       
       CRITICAL: For "growthData", you MUST find and include the Revenue and Profit (Net Income) for the PAST 5 CONSECUTIVE YEARS. This is the top priority for the "Growth Chart". If exact revenue/profit isn't found in one search, look for annual reports or investor presentations.
       
+      CRITICAL: For "historicalData", use Google Finance search results to provide 10-15 data points for each period: 1 Month (1M), 1 Year (1Y), and 5 Years (5Y). Ensure the prices and dates are accurate.
+      
       CRITICAL: For "analystViews", find the 3 most RECENT ratings (Buy/Sell/Hold) and price targets from established firms like Goldman Sachs, J.P. Morgan, Morningstar, etc.
       
       URL POLICY: All URLs in your response MUST be verifiable, live article links found in your search results. 
@@ -140,6 +142,11 @@ export class PulserAgent {
           "analystViews": [{"firm": "Morningstar/Goldman", "rating": "Buy/Outperform", "targetPrice": "Price", "date": "Date"}],
           "expansionPlans": [{"plan": "Strategic point", "date": "Estimated timeline, e.g., Q4 2024"}],
           "growthData": [{"year": "2023", "revenue": 100.5, "profit": 15.2, "growth": 10.5}],
+          "historicalData": {
+            "1M": [{"date": "YYYY-MM-DD", "price": 100.5}],
+            "1Y": [{"date": "YYYY-MM-DD", "price": 100.5}],
+            "5Y": [{"date": "YYYY-MM-DD", "price": 100.5}]
+          },
           "news": [{"title": "Article Headline", "url": "ARTICLE_URL", "date": "Published Date"}]
         }
       }`;
@@ -267,6 +274,17 @@ export class PulserAgent {
         };
       }).filter((g: any) => g.year);
 
+      // Sanitize Historical Data
+      const rawHistorical = data.snapshot?.historicalData || {};
+      const sanitizedHistorical: any = {};
+      ["1M", "1Y", "5Y"].forEach(range => {
+        const points = rawHistorical[range] || [];
+        sanitizedHistorical[range] = points.map((p: any) => ({
+          date: p.date,
+          price: typeof p.price === 'number' ? p.price : parseFloat(String(p.price || '0').replace(/[^0-9.-]/g, ''))
+        })).filter((p: any) => !isNaN(p.price) && p.price > 0);
+      });
+
       return {
         symbolId: symbol.id,
         shortTermTrend: (data.shortTermTrend || Sentiment.NEUTRAL) as Sentiment,
@@ -282,6 +300,7 @@ export class PulserAgent {
         snapshot: {
           ...data.snapshot,
           growthData: sanitizedGrowth,
+          historicalData: sanitizedHistorical,
           news: sanitizedNews.slice(0, 3)
         },
         lastUpdated: new Date().toISOString(),

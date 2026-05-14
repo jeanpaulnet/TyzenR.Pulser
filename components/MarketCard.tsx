@@ -119,15 +119,6 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
                   <span className="text-xl font-bold text-white pb-0.5">
                     {analysis.currencySymbol || (marketSymbol.region === 'INDIA' ? '₹' : '$')}{analysis.currentPrice}
                   </span>
-                  {onRefreshPrice && (
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); onRefreshPrice(marketSymbol); }}
-                      className="p-1 hover:bg-white/20 rounded-md transition-colors text-white/50 hover:text-white"
-                      title="Refresh Price Only"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                    </button>
-                  )}
                 </div>
               )}
             </div>

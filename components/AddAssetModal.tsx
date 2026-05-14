@@ -14,6 +14,7 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
   const [symbol, setSymbol] = useState('');
   const [type, setType] = useState<MarketType>(MarketType.STOCK);
   const [region, setRegion] = useState<'US' | 'INDIA' | 'GLOBAL'>('US');
+  const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
 
@@ -58,7 +59,8 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
         symbol: trimmedSymbol,
         name: validation.name || trimmedSymbol,
         type,
-        region
+        region,
+        notes: notes.trim() || undefined
       });
       onClose();
     } catch (err) {
@@ -151,6 +153,21 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
                 </div>
               </div>
             )}
+
+            <div>
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block flex justify-between">
+                Notes
+                <span className={`text-[9px] ${notes.length >= 1000 ? 'text-rose-500 font-bold' : 'text-slate-400'}`}>
+                  {notes.length}/1000
+                </span>
+              </label>
+              <textarea
+                placeholder="Investment thesis or personal notes..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value.slice(0, 1000))}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 h-20 resize-none"
+              />
+            </div>
           </div>
 
           <div className="flex gap-2 pt-2">

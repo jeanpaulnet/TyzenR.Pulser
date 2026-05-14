@@ -19,6 +19,7 @@ export interface MarketSymbol {
   name: string;
   type: MarketType;
   region: 'US' | 'INDIA' | 'GLOBAL';
+  notes?: string;
 }
 
 export interface PulserAnalysis {
@@ -61,6 +62,11 @@ export interface PulserAnalysis {
     peerComparison?: string;
     analystViews?: { firm: string; rating: string; targetPrice: string; date: string }[];
     news?: { title: string; url: string; date: string }[];
+    historicalData?: {
+      "1M"?: { date: string; price: number }[];
+      "1Y"?: { date: string; price: number }[];
+      "5Y"?: { date: string; price: number }[];
+    };
   };
 }
 

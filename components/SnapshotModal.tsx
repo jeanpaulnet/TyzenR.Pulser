@@ -3,7 +3,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { MarketSymbol, PulserAnalysis, MarketType } from '../types';
 import { X, TrendingUp, BarChart, Info, Users, Zap, Search, Activity, Target, ExternalLink, Newspaper, RefreshCw, Clock } from 'lucide-react';
-import { BarChart as ReChartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
+import { BarChart as ReChartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend, AreaChart, Area } from 'recharts';
 
 interface SnapshotModalProps {
   symbol: MarketSymbol;
@@ -89,57 +89,17 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
   const isDarkMode = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   const theme = isDarkMode ? 'dark' : 'light';
 
-  const PriceChart: React.FC<{ symbol: string; theme: 'light' | 'dark' }> = ({ symbol, theme }) => {
-    const [range, setRange] = React.useState('12M');
-    const containerRef = React.useRef<HTMLDivElement>(null);
+  const PriceChart: React.FC<{ analysis?: PulserAnalysis; theme: 'light' | 'dark' }> = ({ analysis, theme }) => {
+    const [range, setRange] = React.useState<'1M' | '1Y' | '5Y'>('1Y');
+    const historicalData = analysis?.snapshot?.historicalData?.[range] || [];
 
-    React.useEffect(() => {
-      const script = document.createElement('script');
-      script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js';
-      script.type = 'text/javascript';
-      script.async = true;
-      script.innerHTML = JSON.stringify({
-        "symbols": [[symbol, symbol]],
-        "chartOnly": true,
-        "width": "100%",
-        "height": "100%",
-        "locale": "en",
-        "colorTheme": theme,
-        "autosize": true,
-        "showVolume": false,
-        "showMA": false,
-        "hideDateRanges": true,
-        "hideMarketStatus": true,
-        "hideSymbolLogo": true,
-        "scalePosition": "right",
-        "scaleMode": "Normal",
-        "fontFamily": "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
-        "alwaysOutScroll": false,
-        "dateRange": range,
-        "headerFontSize": "medium",
-        "gridLineColor": theme === 'dark' ? "rgba(42, 46, 57, 0)" : "rgba(240, 243, 250, 0)",
-        "trendLineColor": "#6366f1",
-        "fontColor": "#787b86",
-        "underLineColor": "rgba(99, 102, 241, 0.3)",
-        "underLineBottomColor": "rgba(99, 102, 241, 0)",
-        "isTransparent": true,
-        "chartType": "area",
-        "lineColor": "#6366f1",
-        "bottomColor": "rgba(99, 102, 241, 0)",
-        "topColor": "rgba(99, 102, 241, 0.3)",
-      });
-
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-        containerRef.current.appendChild(script);
-      }
-    }, [symbol, theme, range]);
-
-    const ranges = [
+    const ranges: { label: string; value: '1M' | '1Y' | '5Y' }[] = [
       { label: '1M', value: '1M' },
-      { label: '1Y', value: '12M' },
-      { label: '5Y', value: '60M' }
+      { label: '1Y', value: '1Y' },
+      { label: '5Y', value: '5Y' }
     ];
+
+    const currencySymbol = analysis?.currencySymbol || (symbol.region === 'INDIA' ? '₹' : '$');
 
     return (
       <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
@@ -166,8 +126,65 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
             ))}
           </div>
         </div>
-        <div className="h-[250px] w-full" ref={containerRef}>
-          {/* TradingView Widget rendered here */}
+        <div className="h-[250px] w-full">
+          {historicalData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={historicalData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? "rgba(71, 85, 105, 0.2)" : "rgba(226, 232, 240, 0.5)"} />
+                <XAxis 
+                  dataKey="date" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 'bold' }}
+                  tickFormatter={(val) => {
+                    const date = new Date(val);
+                    if (range === '1M') return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                  }}
+                  minTickGap={30}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 'bold' }}
+                  domain={['auto', 'auto']}
+                  tickFormatter={(val) => `${currencySymbol}${val.toLocaleString()}`}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: theme === 'dark' ? '#1e293b' : '#fff', 
+                    border: 'none', 
+                    borderRadius: '12px', 
+                    color: theme === 'dark' ? '#fff' : '#1e293b',
+                    fontSize: '11px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                  }}
+                  formatter={(value: any) => [`${currencySymbol}${value.toLocaleString()}`, 'Price']}
+                  labelFormatter={(label) => new Date(label).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="price" 
+                  stroke="#6366f1" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorPrice)" 
+                  animationDuration={1500}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-slate-400 text-xs gap-2">
+              <Activity className="w-8 h-8 opacity-20 animate-pulse" />
+              <p className="italic opacity-60">Syncing historical Google Finance data...</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -260,7 +277,6 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                 </button>
                 <span className="text-slate-400 dark:text-slate-500 font-medium text-lg truncate">— {symbol.name}</span>
               </h2>
-              <p className="text-xs font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest">Empower Your Decisions</p>
             </div>
           </div>
           <button 
@@ -384,7 +400,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
             {/* Column 2 */}
             <div className="space-y-6">
               {/* Price Chart */}
-              <PriceChart symbol={exchangeSymbol} theme={theme} />
+              <PriceChart analysis={analysis} theme={theme} />
 
               {/* Growth Chart with bars */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-auto lg:min-h-[250px]">
@@ -432,7 +448,11 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                           wrapperStyle={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', paddingBottom: '15px' }}
                         />
                         <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
-                        <Bar dataKey="profit" name="Profit" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                        <Bar dataKey="profit" name="Profit" radius={[4, 4, 0, 0]} barSize={20}>
+                          {growthData.map((entry, index) => (
+                            <Cell key={`cell-profit-${index}`} fill={entry.profit >= 0 ? '#10b981' : '#ef4444'} />
+                          ))}
+                        </Bar>
                       </ReChartsBarChart>
                     </ResponsiveContainer>
                   ) : (
