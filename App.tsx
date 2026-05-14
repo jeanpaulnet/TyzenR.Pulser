@@ -389,7 +389,7 @@ const App: React.FC = () => {
               onClick={handleScanAll}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm transition-all active:scale-95 shadow-lg ${theme === 'dark' ? 'bg-white text-slate-950 hover:bg-emerald-500 hover:text-white shadow-emerald-500/10' : 'bg-white text-purple-700 hover:bg-purple-50 shadow-purple-900/20'}`}
             >
-              <Activity className="w-4 h-4" /> <span className="hidden sm:inline">Scan All</span>
+              <Activity className="w-4 h-4" /> <span className="hidden sm:inline">Refresh All</span>
             </button>
           </div>
         </div>
@@ -452,7 +452,7 @@ const App: React.FC = () => {
         <div className="w-full">
           {searchQuery || filterType !== 'ALL' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredSymbols.map(symbol => (
+              {filteredSymbols.map((symbol, index) => (
                 <MarketCard 
                   key={symbol.id}
                   symbol={symbol}
@@ -460,6 +460,7 @@ const App: React.FC = () => {
                   onRefresh={handleAnalyze}
                   onRefreshPrice={handleRefreshPrice}
                   onRemove={handleRemoveSymbol}
+                  showHint={index === 0 && Object.keys(state.analyses).length === 0 && searchQuery === ''}
                 />
               ))}
             </div>
@@ -474,7 +475,7 @@ const App: React.FC = () => {
                 strategy={rectSortingStrategy}
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {state.symbols.map(symbol => (
+                  {state.symbols.map((symbol, index) => (
                     <MarketCard 
                       key={symbol.id}
                       symbol={symbol}
@@ -483,6 +484,7 @@ const App: React.FC = () => {
                       onRefreshPrice={handleRefreshPrice}
                       onRemove={handleRemoveSymbol}
                       isSortable={true}
+                      showHint={index === 0 && Object.keys(state.analyses).length === 0}
                     />
                   ))}
                 </div>

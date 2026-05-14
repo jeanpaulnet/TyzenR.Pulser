@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { MarketSymbol, MarketType, PulserAnalysis, Sentiment } from '../types';
 import { SENTIMENT_COLORS } from '../constants';
-import { TrendingUp, TrendingDown, Minus, RefreshCw, ExternalLink, AlertCircle, Clock, Calendar, BarChart3, Fingerprint, GripVertical } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, RefreshCw, ExternalLink, AlertCircle, Clock, Calendar, BarChart3, Fingerprint, GripVertical, ChevronRight } from 'lucide-react';
 import SnapshotModal from './SnapshotModal';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface MarketCardProps {
   symbol: MarketSymbol;
@@ -14,9 +15,10 @@ interface MarketCardProps {
   onRefreshPrice?: (symbol: MarketSymbol) => void;
   onRemove: (id: string) => void;
   isSortable?: boolean;
+  showHint?: boolean;
 }
 
-const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis, onRefresh, onRefreshPrice, onRemove, isSortable }) => {
+const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis, onRefresh, onRefreshPrice, onRemove, isSortable, showHint }) => {
   const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
   const isAnalyzing = analysis?.isAnalyzing;
 
@@ -83,12 +85,15 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
     >
       {/* Header Area */}
       <div 
-        className={`bg-gradient-to-br ${getHeaderGradient()} px-6 py-5 relative border-b dark:border-slate-800/40 ${isSortable ? 'cursor-grab active:cursor-grabbing' : ''}`}
-        {...(isSortable ? { ...attributes, ...listeners } : {})}
+        className={`bg-gradient-to-br ${getHeaderGradient()} px-6 py-5 relative border-b dark:border-slate-800/40`}
       >
         {/* Drag Handle */}
         {isSortable && (
-          <div className="absolute left-2 top-1/2 -translate-y-1/2 opacity-30 group-hover:opacity-60 transition-opacity">
+          <div 
+            className="absolute left-2 top-0 bottom-0 w-10 flex items-center justify-center opacity-30 group-hover:opacity-60 transition-opacity cursor-grab active:cursor-grabbing touch-none"
+            {...attributes}
+            {...listeners}
+          >
             <GripVertical className="w-4 h-4 text-white" />
           </div>
         )}
@@ -129,14 +134,30 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
             <p className="text-xs text-purple-100 dark:text-slate-500 truncate max-w-[140px] font-medium">{marketSymbol.name}</p>
           </div>
           
-          <div className="flex items-center gap-1">
-            <button 
+          <div className="flex items-center gap-1 relative">
+            <motion.button 
               onClick={() => onRefresh(marketSymbol)}
               disabled={isAnalyzing}
-              className="p-2 hover:bg-white/10 dark:hover:bg-white/5 rounded-xl transition-colors text-white/70 dark:text-slate-600 hover:text-white"
+              animate={showHint && !isAnalyzing ? {
+                scale: [1, 1.1, 1],
+                backgroundColor: [
+                  'rgba(99, 102, 241, 0)',
+                  'rgba(99, 102, 241, 0.2)',
+                  'rgba(99, 102, 241, 0)'
+                ]
+              } : {}}
+              transition={showHint && !isAnalyzing ? {
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              } : {}}
+              className="p-2 hover:bg-white/10 dark:hover:bg-white/5 rounded-xl transition-colors text-white/70 dark:text-slate-600 hover:text-white relative z-10"
             >
               <RefreshCw className={`w-4 h-4 ${isAnalyzing ? 'animate-spin text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-400 to-emerald-400' : ''}`} style={isAnalyzing ? { color: 'initial', backgroundImage: 'linear-gradient(to right, #fb7185, #fbbf24, #34d399)', WebkitBackgroundClip: 'text', backgroundClip: 'text' } : {}} />
-            </button>
+              {showHint && !isAnalyzing && (
+                <span className="absolute inset-0 rounded-xl border-2 border-indigo-500/50 animate-ping opacity-75" />
+              )}
+            </motion.button>
             <button 
               onClick={() => onRemove(marketSymbol.id)}
               className="p-2 hover:bg-rose-500/20 dark:hover:bg-rose-500/10 rounded-xl transition-colors text-white/70 dark:text-slate-600 hover:text-rose-200 dark:hover:text-rose-400"
@@ -226,7 +247,7 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
             </div>
             <div className="text-center">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600">
-                {isAnalyzing ? 'Synthesizing Markets' : 'Intelligence Offline'}
+                {isAnalyzing ? 'Synthesizing Markets' : 'Click Refresh to start AI Engine for this symbol'}
               </p>
               {isAnalyzing && <p className="text-[9px] text-slate-500 dark:text-slate-700 mt-1">Checking Reuters, Bloomberg, WSJ...</p>}
             </div>

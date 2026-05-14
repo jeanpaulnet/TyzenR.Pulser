@@ -8,18 +8,23 @@ export class PulserAgent {
   private async getApiKey(): Promise<string> {
     if (this.cachedApiKey) return this.cachedApiKey;
     
+    // 1. Try Environment Key first (Standard for this platform)
+    const envKey = typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : undefined;
+    if (envKey) {
+      this.cachedApiKey = envKey;
+      return envKey;
+    }
+
+    // 2. Fallback to external endpoint if env key is missing
     try {
-      // Fetching the key from the requested endpoint
       const response = await fetch('https://webapi.tyzenr.com/keys/gemini');
-      if (!response.ok) throw new Error('Failed to fetch API key');
+      if (!response.ok) throw new Error('Failed to fetch fallback API key');
       const data = await response.text();
       this.cachedApiKey = data.trim();
       return this.cachedApiKey;
     } catch (error) {
-      console.warn('External API key fetch failed, checking local env...', error);
-      const fallbackKey = (process.env.GEMINI_API_KEY as string);
-      if (fallbackKey) return fallbackKey;
-      throw error;
+      console.error('API Key Retrieval Failed:', error);
+      throw new Error('Required API configuration missing. Please ensure GEMINI_API_KEY is set.');
     }
   }
 
@@ -151,21 +156,37 @@ export class PulserAgent {
           url: c.web.uri
         }));
 
+      const verifiedUris = new Set(verifiedLinks.map((l: any) => l.url));
+
       // Validation function to detect potential hallucinated or generic URLs
-      const isDeadLink = (url: string) => {
+      const isDeadLink = (url: string, isFromGrounding: boolean = false) => {
         if (!url) return true;
         if (!url.startsWith('http')) return true;
         const lowUrl = url.toLowerCase();
         
         // Detect common root domains or placeholders instead of direct articles
-        const placeholders = ['yahoo.com', 'reuters.com', 'bloomberg.com', 'cnbc.com', 'investing.com', 'marketwatch.com', 'google.com'];
-        const isRoot = placeholders.some(p => lowUrl === `https://${p}` || lowUrl === `http://${p}` || lowUrl === `https://www.${p}` || lowUrl === `http://www.${p}`);
+        const placeholders = [
+          'yahoo.com', 'reuters.com', 'bloomberg.com', 'cnbc.com', 'investing.com', 
+          'marketwatch.com', 'google.com', 'bing.com', 'facebook.com', 'twitter.com',
+          'whalesbook.com' // Specifically identified by user as a source of 404s
+        ];
+        const isRoot = placeholders.some(p => 
+          lowUrl === `https://${p}` || lowUrl === `http://${p}` || 
+          lowUrl === `https://www.${p}` || lowUrl === `http://www.${p}` ||
+          lowUrl.endsWith(`${p}/`) || lowUrl.endsWith(`${p}`)
+        );
         
         // Detect 404 or error markers in the URL itself
-        const errorMarkers = ['/404', 'notfound', 'error-page', 'access-denied', 'page-not-found'];
+        const errorMarkers = ['/404', 'notfound', 'error-page', 'access-denied', 'page-not-found', 'forbidden'];
         const hasErrorMarker = errorMarkers.some(m => lowUrl.includes(m));
 
-        return isRoot || hasErrorMarker || url.length < 22; // Articles are usually long URLs
+        // If it's NOT in the verified URIs but looks like a deep link, it's likely hallucinated
+        const articleMarkers = ['/202', '/article/', '/news/', '-', '_'];
+        const looksLikeHallucinatedArticle = !isFromGrounding && 
+          articleMarkers.some(m => lowUrl.includes(m)) && 
+          !verifiedUris.has(url);
+
+        return isRoot || hasErrorMarker || url.length < 22 || looksLikeHallucinatedArticle;
       };
 
       // Sanitize News (ensure links are real)
@@ -183,8 +204,10 @@ export class PulserAgent {
           url = betterLink.url;
         }
 
-        if (isDeadLink(url)) {
-          url = `https://www.google.com/search?q=${encodeURIComponent(n.title + " " + symbol.symbol)}`;
+        const isFromGrounding = verifiedUris.has(url);
+
+        if (isDeadLink(url, isFromGrounding)) {
+          url = `https://www.google.com/search?q=${encodeURIComponent(n.title + " " + symbol.name)}`;
         }
         return { ...n, url };
       });
@@ -201,8 +224,10 @@ export class PulserAgent {
         );
         if (betterLink) url = betterLink.url;
 
-        if (isDeadLink(url)) {
-          url = `https://www.google.com/search?q=${encodeURIComponent(s.title + " " + symbol.symbol)}`;
+        const isFromGrounding = verifiedUris.has(url);
+
+        if (isDeadLink(url, isFromGrounding)) {
+          url = `https://www.google.com/search?q=${encodeURIComponent(s.title + " " + symbol.name)}`;
         }
         return { title: s.title, url };
       });
