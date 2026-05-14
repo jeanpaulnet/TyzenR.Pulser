@@ -86,6 +86,93 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
 
   const exchangeSymbol = getTradingViewExchangeSymbol();
 
+  const isDarkMode = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  const theme = isDarkMode ? 'dark' : 'light';
+
+  const PriceChart: React.FC<{ symbol: string; theme: 'light' | 'dark' }> = ({ symbol, theme }) => {
+    const [range, setRange] = React.useState('12M');
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+      const script = document.createElement('script');
+      script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js';
+      script.type = 'text/javascript';
+      script.async = true;
+      script.innerHTML = JSON.stringify({
+        "symbols": [[symbol, symbol]],
+        "chartOnly": true,
+        "width": "100%",
+        "height": "100%",
+        "locale": "en",
+        "colorTheme": theme,
+        "autosize": true,
+        "showVolume": false,
+        "showMA": false,
+        "hideDateRanges": true,
+        "hideMarketStatus": true,
+        "hideSymbolLogo": true,
+        "scalePosition": "right",
+        "scaleMode": "Normal",
+        "fontFamily": "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
+        "alwaysOutScroll": false,
+        "dateRange": range,
+        "headerFontSize": "medium",
+        "gridLineColor": theme === 'dark' ? "rgba(42, 46, 57, 0)" : "rgba(240, 243, 250, 0)",
+        "trendLineColor": "#6366f1",
+        "fontColor": "#787b86",
+        "underLineColor": "rgba(99, 102, 241, 0.3)",
+        "underLineBottomColor": "rgba(99, 102, 241, 0)",
+        "isTransparent": true,
+        "chartType": "area",
+        "lineColor": "#6366f1",
+        "bottomColor": "rgba(99, 102, 241, 0)",
+        "topColor": "rgba(99, 102, 241, 0.3)",
+      });
+
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+        containerRef.current.appendChild(script);
+      }
+    }, [symbol, theme, range]);
+
+    const ranges = [
+      { label: '1M', value: '1M' },
+      { label: '1Y', value: '12M' },
+      { label: '5Y', value: '60M' }
+    ];
+
+    return (
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-500">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <h3 className="font-bold text-slate-800 dark:text-slate-200">Price Chart</h3>
+          </div>
+          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            {ranges.map(r => (
+              <button
+                key={r.value}
+                onClick={() => setRange(r.value)}
+                className={`px-3 py-1 rounded-lg text-[10px] font-black tracking-widest transition-all ${
+                  range === r.value 
+                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="h-[250px] w-full" ref={containerRef}>
+          {/* TradingView Widget rendered here */}
+        </div>
+      </div>
+    );
+  };
+
   const getRatingColor = (rating: string) => {
     const r = rating.toLowerCase();
     if (r.includes('buy') || r.includes('outperform') || r.includes('overweight') || r.includes('positive')) return 'text-emerald-500';
@@ -296,6 +383,9 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
 
             {/* Column 2 */}
             <div className="space-y-6">
+              {/* Price Chart */}
+              <PriceChart symbol={exchangeSymbol} theme={theme} />
+
               {/* Growth Chart with bars */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-auto lg:min-h-[250px]">
                 <div className="flex justify-between items-center mb-6">

@@ -63,6 +63,19 @@ export class PulserAgent {
   /**
    * Analyzes market sentiment (Short & Long Term) using search-grounded AI.
    */
+  private formatCurrencySymbol(currency: string, region?: string): string {
+    const c = currency.trim().toUpperCase();
+    if (c === 'INR') return '₹';
+    if (c === 'USD') return '$';
+    if (c === 'GBP') return '£';
+    if (c === 'EUR') return '€';
+    // If it's already a symbol, return it, otherwise fallback to region default
+    const commonSymbols = ['$', '₹', '£', '€', '¥', '₿'];
+    if (commonSymbols.includes(c)) return c;
+    
+    return c || (region === 'INDIA' ? '₹' : '$');
+  }
+
   async analyzeSymbol(symbol: MarketSymbol): Promise<PulserAnalysis> {
     try {
       const apiKey = await this.getApiKey();
@@ -261,7 +274,7 @@ export class PulserAgent {
         confidenceScore: data.confidenceScore || 50,
         summary: data.summary || "No summary available.",
         currentPrice: data.currentPrice || "0.00",
-        currencySymbol: data.currencySymbol || (symbol.region === 'INDIA' ? '₹' : '$'),
+        currencySymbol: this.formatCurrencySymbol(data.currencySymbol || '', symbol.region),
         sources: [
           ...verifiedLinks,
           ...sanitizedSources,
@@ -323,7 +336,7 @@ export class PulserAgent {
       
       return {
         price: data.price,
-        currency: data.currency,
+        currency: this.formatCurrencySymbol(data.currency || '', symbol.region),
         source: data.source
       };
     } catch (error) {
