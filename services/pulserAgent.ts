@@ -65,15 +65,22 @@ export class PulserAgent {
    */
   private formatCurrencySymbol(currency: string, region?: string): string {
     const c = currency.trim().toUpperCase();
-    if (c === 'INR') return '₹';
-    if (c === 'USD') return '$';
-    if (c === 'GBP') return '£';
-    if (c === 'EUR') return '€';
-    // If it's already a symbol, return it, otherwise fallback to region default
+    if (c === 'INR' || c === '₹' || c.includes('RS') || c.includes('RUPEE')) return '₹';
+    if (c === 'USD' || c === '$') return '$';
+    if (c === 'GBP' || c === '£') return '£';
+    if (c === 'EUR' || c === '€') return '€';
+    
+    // If it's already a symbol, return it
     const commonSymbols = ['$', '₹', '£', '€', '¥', '₿'];
     if (commonSymbols.includes(c)) return c;
     
-    return c || (region === 'INDIA' ? '₹' : '$');
+    return region === 'INDIA' ? '₹' : '$';
+  }
+
+  private sanitizePrice(price: string): string {
+    if (!price) return "0.00";
+    // Remove common currency codes and symbols that might be prefixed/suffixed
+    return price.replace(/INR|USD|GBP|EUR|RS\.?|RUPEES?|[\$₹£€]/gi, '').trim();
   }
 
   async analyzeSymbol(symbol: MarketSymbol): Promise<PulserAnalysis> {
@@ -128,6 +135,7 @@ export class PulserAgent {
           "growthRate3Y": "3Y%",
           "growthRate5Y": "5Y%",
           "debtToEquity": "Ratio",
+          "marketCap": "Market Cap (e.g., $2.5T or ₹15L Cr)",
           "marginOfSafety": "Safety%",
           "ma200": "Price",
           "ma50": "Price",
@@ -291,7 +299,7 @@ export class PulserAgent {
         longTermTrend: (data.longTermTrend || Sentiment.NEUTRAL) as Sentiment,
         confidenceScore: data.confidenceScore || 50,
         summary: data.summary || "No summary available.",
-        currentPrice: data.currentPrice || "0.00",
+        currentPrice: this.sanitizePrice(data.currentPrice || "0.00"),
         currencySymbol: this.formatCurrencySymbol(data.currencySymbol || '', symbol.region),
         sources: [
           ...verifiedLinks,
@@ -299,6 +307,18 @@ export class PulserAgent {
         ].filter((v, i, a) => a.findIndex(t => t.url === v.url) === i).slice(0, 5),
         snapshot: {
           ...data.snapshot,
+          intrinsicValue: this.sanitizePrice(data.snapshot?.intrinsicValue || ""),
+          cmp: this.sanitizePrice(data.snapshot?.cmp || data.currentPrice || ""),
+          high52w: this.sanitizePrice(data.snapshot?.high52w || ""),
+          low52w: this.sanitizePrice(data.snapshot?.low52w || ""),
+          ma200: this.sanitizePrice(data.snapshot?.ma200 || ""),
+          ma100: this.sanitizePrice(data.snapshot?.ma100 || ""),
+          ma50: this.sanitizePrice(data.snapshot?.ma50 || ""),
+          analystViews: (data.snapshot?.analystViews || []).map((v: any) => ({
+            ...v,
+            targetPrice: this.sanitizePrice(v.targetPrice || "")
+          })),
+          marketCap: this.sanitizePrice(data.snapshot?.marketCap || data.marketCap || '—'),
           growthData: sanitizedGrowth,
           historicalData: sanitizedHistorical,
           news: sanitizedNews.slice(0, 3)
@@ -337,7 +357,7 @@ export class PulserAgent {
       ${sourcePreference}
       
       Return ONLY a JSON object:
-      {"price": "number as string", "currency": "USD/INR/etc", "source": "Name of source"}
+      {"price": "number as string", "currency": "USD/₹/etc", "source": "Name of source"}
       
       If you cannot find a price, return: {"price": "0.00", "currency": "USD", "source": "Not Found"}`;
 
@@ -354,7 +374,7 @@ export class PulserAgent {
       const data = jsonMatch ? JSON.parse(jsonMatch[0]) : { price: "0.00", currency: "USD", source: "Unknown" };
       
       return {
-        price: data.price,
+        price: this.sanitizePrice(data.price),
         currency: this.formatCurrencySymbol(data.currency || '', symbol.region),
         source: data.source
       };

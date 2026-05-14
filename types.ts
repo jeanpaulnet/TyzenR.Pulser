@@ -46,6 +46,7 @@ export interface PulserAnalysis {
     growthRate3Y?: string;
     growthRate5Y?: string;
     debtToEquity?: string;
+    marketCap?: string;
     marginOfSafety?: string;
     ma200?: string;
     ma100?: string;
