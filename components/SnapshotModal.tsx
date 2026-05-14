@@ -416,26 +416,64 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
               {/* Price Chart */}
               <PriceChart analysis={analysis} theme={theme} />
 
-              {/* About Section */}
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-slate-500/10 rounded-xl text-slate-500">
-                    <Info className="w-4 h-4" />
+              {/* Growth Chart with bars */}
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-auto lg:min-h-[250px]">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/10 rounded-xl text-blue-500">
+                      <BarChart className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200">Growth Chart</h3>
                   </div>
-                  <h3 className="font-bold text-slate-800 dark:text-slate-200 capitalize">About {symbol.type.charAt(0) + symbol.type.slice(1).toLowerCase()}</h3>
+                  <span className="text-[10px] font-black text-slate-400 uppercase">REVENUE & PROFIT (BILLIONS {symbol.region === 'INDIA' ? '₹' : '$'})</span>
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  {snapshot?.about || `${symbol.name} is an asset being tracked for pulse sentiment. Background data pending update.`}
-                </p>
-                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2">
-                   <div>
-                      <p className="text-[9px] uppercase font-black text-slate-400">Founded</p>
-                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{snapshot?.founded || '—'}</p>
-                   </div>
-                   <div>
-                      <p className="text-[9px] uppercase font-black text-slate-400">Employees</p>
-                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{snapshot?.employees || '—'}</p>
-                   </div>
+                
+                <div className="w-full h-[220px] mt-2">
+                  {growthData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ReChartsBarChart data={growthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155 opacity-20" />
+                        <XAxis 
+                          dataKey="year" 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} 
+                          dy={10}
+                        />
+                        <YAxis 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} 
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#1e293b', 
+                            border: 'none', 
+                            borderRadius: '12px', 
+                            color: '#fff',
+                            fontSize: '12px'
+                          }}
+                          cursor={{ fill: 'rgba(51, 65, 85, 0.1)' }}
+                        />
+                        <Legend 
+                          verticalAlign="top" 
+                          align="right" 
+                          iconSize={10}
+                          wrapperStyle={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', paddingBottom: '15px' }}
+                        />
+                        <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
+                        <Bar dataKey="profit" name="Profit" radius={[4, 4, 0, 0]} barSize={20}>
+                          {growthData.map((entry, index) => (
+                            <Cell key={`cell-profit-${index}`} fill={entry.profit >= 0 ? '#10b981' : '#ef4444'} />
+                          ))}
+                        </Bar>
+                      </ReChartsBarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-slate-400 text-xs italic">
+                      Revenue trend data unavailable
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -502,64 +540,26 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
 
             {/* Column 3 */}
             <div className="space-y-6">
-              {/* Growth Chart with bars */}
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-auto lg:min-h-[250px]">
-                <div className="flex justify-between items-center mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-500/10 rounded-xl text-blue-500">
-                      <BarChart className="w-4 h-4" />
-                    </div>
-                    <h3 className="font-bold text-slate-800 dark:text-slate-200">Growth Chart</h3>
+              {/* About Section */}
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-slate-500/10 rounded-xl text-slate-500">
+                    <Info className="w-4 h-4" />
                   </div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase">REVENUE & PROFIT (BILLIONS {symbol.region === 'INDIA' ? '₹' : '$'})</span>
+                  <h3 className="font-bold text-slate-800 dark:text-slate-200 capitalize">About {symbol.type.charAt(0) + symbol.type.slice(1).toLowerCase()}</h3>
                 </div>
-                
-                <div className="w-full h-[220px] mt-2">
-                  {growthData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ReChartsBarChart data={growthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155 opacity-20" />
-                        <XAxis 
-                          dataKey="year" 
-                          axisLine={false} 
-                          tickLine={false} 
-                          tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} 
-                          dy={10}
-                        />
-                        <YAxis 
-                          axisLine={false} 
-                          tickLine={false} 
-                          tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 'bold' }} 
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: '#1e293b', 
-                            border: 'none', 
-                            borderRadius: '12px', 
-                            color: '#fff',
-                            fontSize: '12px'
-                          }}
-                          cursor={{ fill: 'rgba(51, 65, 85, 0.1)' }}
-                        />
-                        <Legend 
-                          verticalAlign="top" 
-                          align="right" 
-                          iconSize={10}
-                          wrapperStyle={{ fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', paddingBottom: '15px' }}
-                        />
-                        <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={20} />
-                        <Bar dataKey="profit" name="Profit" radius={[4, 4, 0, 0]} barSize={20}>
-                          {growthData.map((entry, index) => (
-                            <Cell key={`cell-profit-${index}`} fill={entry.profit >= 0 ? '#10b981' : '#ef4444'} />
-                          ))}
-                        </Bar>
-                      </ReChartsBarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-slate-400 text-xs italic">
-                      Revenue trend data unavailable
-                    </div>
-                  )}
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  {snapshot?.about || `${symbol.name} is an asset being tracked for pulse sentiment. Background data pending update.`}
+                </p>
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2">
+                   <div>
+                      <p className="text-[9px] uppercase font-black text-slate-400">Founded</p>
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{snapshot?.founded || '—'}</p>
+                   </div>
+                   <div>
+                      <p className="text-[9px] uppercase font-black text-slate-400">Employees</p>
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{snapshot?.employees || '—'}</p>
+                   </div>
                 </div>
               </div>
 
