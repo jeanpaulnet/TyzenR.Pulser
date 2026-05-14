@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { MarketSymbol, AppState, PulserAnalysis, MarketType } from './types';
+import { MarketSymbol, AppState, PulserAnalysis, MarketType, UserProfile } from './types';
 import { INITIAL_SYMBOLS } from './constants';
 import { pulser } from './services/pulserAgent';
 import MarketCard from './components/MarketCard';
 import AddSymbolModal from './components/AddAssetModal';
-import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon, LogOut, Mail, Send, CheckCircle2, GripHorizontal } from 'lucide-react';
+import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon, LogOut, Mail, Send, CheckCircle2, GripHorizontal, ChevronDown } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   DndContext, 
   closestCenter,
@@ -30,11 +31,10 @@ declare global {
   }
 }
 
-interface UserProfile {
-  email: string;
-  name: string;
-  picture: string;
-}
+// Remove local UserProfile as it's imported from types.ts
+
+// Scan cost constant
+const SCAN_COST = 0.10;
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(() => {
@@ -86,6 +86,7 @@ const App: React.FC = () => {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [supportMessage, setSupportMessage] = useState('');
   const [isSendingSupport, setIsSendingSupport] = useState(false);
@@ -111,10 +112,19 @@ const App: React.FC = () => {
     const handleCredentialResponse = async (response: any) => {
       try {
         const decoded: any = jwtDecode(response.credential);
+        const balances = JSON.parse(localStorage.getItem('pulser_balances') || '{}');
+        let currentBalance = balances[decoded.email];
+        if (currentBalance === undefined) {
+          currentBalance = 10.00;
+          balances[decoded.email] = 10.00;
+          localStorage.setItem('pulser_balances', JSON.stringify(balances));
+        }
+
         const profile: UserProfile = {
           email: decoded.email,
           name: decoded.name,
           picture: decoded.picture,
+          balance: currentBalance,
         };
         setUser(profile);
         setIsLoginModalOpen(false);
@@ -216,6 +226,23 @@ const App: React.FC = () => {
   };
 
   const handleAnalyze = useCallback(async (symbol: MarketSymbol) => {
+    // Check balance
+    if (user && user.balance < SCAN_COST) {
+      // For now we just don't analyze, could show a toast or modal
+      setState(prev => ({
+        ...prev,
+        analyses: {
+          ...prev.analyses,
+          [symbol.id]: { 
+            ...(prev.analyses[symbol.id] || {}), 
+            isAnalyzing: false,
+            summary: `Insufficient balance ($${SCAN_COST.toFixed(2)} required per scan). Please contact support to top up.`
+          } as PulserAnalysis
+        }
+      }));
+      return;
+    }
+
     setState(prev => ({
       ...prev,
       analyses: {
@@ -226,6 +253,19 @@ const App: React.FC = () => {
 
     try {
       const result = await pulser.analyzeSymbol(symbol);
+      
+      // Deduct balance
+      if (user) {
+        const newBalance = Math.max(0, user.balance - SCAN_COST);
+        const updatedUser = { ...user, balance: newBalance };
+        setUser(updatedUser);
+        
+        // Persist balance
+        const balances = JSON.parse(localStorage.getItem('pulser_balances') || '{}');
+        balances[user.email] = newBalance;
+        localStorage.setItem('pulser_balances', JSON.stringify(balances));
+      }
+
       setState(prev => ({
         ...prev,
         analyses: {
@@ -341,6 +381,26 @@ const App: React.FC = () => {
     setSupportResponse(null);
   };
 
+  // Close user menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (isUserMenuOpen) {
+        const target = e.target as HTMLElement;
+        if (!target.closest('.user-menu-container')) {
+          setIsUserMenuOpen(false);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isUserMenuOpen]);
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('pulser_user');
+    setIsUserMenuOpen(false);
+  };
+
   return (
     <div className={`min-h-screen flex flex-col selection:bg-emerald-500/30 transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-gradient-to-b from-white to-[#f5f5f5] text-slate-900'}`}>
       {/* Header */}
@@ -364,16 +424,66 @@ const App: React.FC = () => {
             </div>
 
             {user ? (
-              <div className={`flex items-center gap-3 px-3 py-1.5 border rounded-full transition-colors ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white/10 border-white/20'}`}>
-                <img src={user.picture} alt={user.name} className="w-6 h-6 rounded-full border border-emerald-400/30" />
-                <span className={`text-xs font-bold hidden sm:inline ${theme === 'dark' ? 'text-slate-200' : 'text-white'}`}>{user.name.split(' ')[0]}</span>
+              <div className="relative user-menu-container">
                 <button 
-                  onClick={() => { setUser(null); localStorage.removeItem('pulser_user'); }}
-                  className={`p-1.5 rounded-lg transition-all ${theme === 'dark' ? 'text-slate-500 hover:text-rose-400 hover:bg-slate-800' : 'text-purple-200 hover:text-white hover:bg-white/10'}`}
-                  title="Logout"
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className={`flex items-center gap-2 pl-1.5 pr-3 py-1 border rounded-full transition-all hover:bg-white/10 ${isUserMenuOpen ? 'bg-white/15 ring-2 ring-emerald-500/30' : 'bg-white/5 border-white/20'}`}
                 >
-                  <LogOut className="w-4 h-4" />
+                  <img src={user.picture} alt={user.name} className="w-7 h-7 rounded-full border border-emerald-400/30 shadow-sm" />
+                  <span className={`text-xs font-bold hidden sm:inline text-white truncate max-w-[100px]`}>
+                    {user.name.split(' ')[0]}
+                  </span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180 text-white' : ''}`} />
                 </button>
+
+                <AnimatePresence>
+                  {isUserMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className={`absolute right-0 mt-3 w-48 rounded-[1.5rem] border shadow-2xl overflow-hidden z-50 ${theme === 'dark' ? 'bg-slate-900 border-slate-800 shadow-black/50' : 'bg-white border-slate-200 shadow-slate-200/50'}`}
+                    >
+                      <div className={`px-4 py-3 border-b ${theme === 'dark' ? 'border-zinc-800' : 'border-slate-100'}`}>
+                        <p className={`text-[10px] font-black uppercase text-slate-500 tracking-widest`}>Account</p>
+                        <p className={`text-xs font-bold truncate mt-1 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{user.email}</p>
+                        <div className={`mt-2 p-2 rounded-xl border ${theme === 'dark' ? 'bg-zinc-950 border-zinc-800' : 'bg-slate-50 border-slate-100'}`}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-black uppercase text-slate-400">Balance</span>
+                            <span className={`text-xs font-black ${user.balance > SCAN_COST ? 'text-emerald-500' : 'text-rose-500'}`}>
+                              ${user.balance.toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between mt-0.5">
+                            <span className="text-[9px] font-black uppercase text-slate-400">Scans</span>
+                            <span className={`text-xs font-black ${user.balance > SCAN_COST ? 'text-emerald-500' : 'text-rose-500'}`}>
+                              {Math.floor(user.balance / SCAN_COST)} Left
+                            </span>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => { setIsUserMenuOpen(false); setIsSupportModalOpen(true); }}
+                          className={`w-full mt-2 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
+                        >
+                          Recharge ($10 / 100 Scans)
+                        </button>
+                      </div>
+                      
+                      <div className="p-2">
+                        <button 
+                          onClick={handleLogout}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all ${theme === 'dark' ? 'text-rose-400 hover:bg-rose-500/10' : 'text-rose-600 hover:bg-rose-50'}`}
+                        >
+                          <div className={`p-1.5 rounded-lg ${theme === 'dark' ? 'bg-rose-500/10' : 'bg-rose-50'}`}>
+                            <LogOut className="w-3.5 h-3.5" />
+                          </div>
+                          Logout
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ) : (
               <button 

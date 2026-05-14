@@ -71,6 +71,13 @@ export interface PulserAnalysis {
   };
 }
 
+export interface UserProfile {
+  email: string;
+  name: string;
+  picture: string;
+  balance: number;
+}
+
 export interface AppState {
   symbols: MarketSymbol[];
   analyses: Record<string, PulserAnalysis>;
