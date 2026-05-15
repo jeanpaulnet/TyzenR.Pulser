@@ -134,10 +134,20 @@ const App: React.FC = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [supportMessage, setSupportMessage] = useState('');
+  const [supportUserName, setSupportUserName] = useState('');
+  const [supportUserEmail, setSupportUserEmail] = useState('');
+  const [supportAppName, setSupportAppName] = useState('Pulser AI');
   const [isSendingSupport, setIsSendingSupport] = useState(false);
   const [supportResponse, setSupportResponse] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
+
+  useEffect(() => {
+    if (isSupportModalOpen && user) {
+      setSupportUserName(user.name || '');
+      setSupportUserEmail(user.email || '');
+    }
+  }, [isSupportModalOpen, user]);
 
   // Persistence
   useEffect(() => {
@@ -429,13 +439,13 @@ const App: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'UserEmail': user?.email || '',
-          'UserName': user?.name || ''
+          'UserEmail': supportUserEmail || user?.email || '',
+          'UserName': supportUserName || user?.name || ''
         },
         body: JSON.stringify({
-          AppName: window.location.hostname,
-          UserName: user?.name || '',
-          UserEmail: user?.email || '',
+          AppName: supportAppName,
+          UserName: supportUserName || user?.name || '',
+          UserEmail: supportUserEmail || user?.email || '',
           Message: supportMessage
         })
       });
@@ -453,6 +463,9 @@ const App: React.FC = () => {
   const closeSupportModal = () => {
     setIsSupportModalOpen(false);
     setSupportMessage('');
+    setSupportUserName('');
+    setSupportUserEmail('');
+    setSupportAppName('Pulser AI');
     setSupportResponse(null);
   };
 
@@ -810,13 +823,53 @@ const App: React.FC = () => {
                   {supportResponse}
                 </div>
               ) : (
-                <textarea 
-                  placeholder="Describe your issue or feedback here..."
-                  value={supportMessage}
-                  onChange={(e) => setSupportMessage(e.target.value)}
-                  disabled={isSendingSupport}
-                  className={`w-full h-32 p-4 rounded-2xl border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white placeholder:text-slate-600' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
-                />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-2">UserName</label>
+                      <input 
+                        type="text"
+                        placeholder="UserName"
+                        value={supportUserName}
+                        onChange={(e) => setSupportUserName(e.target.value)}
+                        disabled={isSendingSupport}
+                        className={`w-full px-4 py-3 rounded-2xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white placeholder:text-slate-600' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-2">UserEmail</label>
+                      <input 
+                        type="email"
+                        placeholder="UserEmail"
+                        value={supportUserEmail}
+                        onChange={(e) => setSupportUserEmail(e.target.value)}
+                        disabled={isSendingSupport}
+                        className={`w-full px-4 py-3 rounded-2xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white placeholder:text-slate-600' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-left">
+                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-2">AppName</label>
+                    <input 
+                      type="text"
+                      placeholder="AppName"
+                      value={supportAppName}
+                      onChange={(e) => setSupportAppName(e.target.value)}
+                      disabled={isSendingSupport}
+                      className={`w-full px-4 py-3 rounded-2xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white placeholder:text-slate-600' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
+                    />
+                  </div>
+                  <div className="space-y-1 text-left">
+                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-2">Message</label>
+                    <textarea 
+                      placeholder="Describe your issue or feedback here..."
+                      value={supportMessage}
+                      onChange={(e) => setSupportMessage(e.target.value)}
+                      disabled={isSendingSupport}
+                      className={`w-full h-32 p-4 rounded-2xl border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-white placeholder:text-slate-600' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'}`}
+                    />
+                  </div>
+                </div>
               )}
 
               <div className="flex items-center gap-3">
