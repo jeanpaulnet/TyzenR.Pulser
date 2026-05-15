@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MarketType, MarketSymbol } from '../types';
 import { Plus, X, Globe, Landmark, Coins, LineChart, Loader2 } from 'lucide-react';
 import { pulser } from '../services/pulserAgent';
@@ -18,8 +18,16 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
   const [error, setError] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    // Focus the input when the modal opens
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -101,6 +109,7 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
             <div>
               <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Market Symbol</label>
               <input
+                ref={inputRef}
                 type="text"
                 required
                 placeholder={region === 'INDIA' ? 'e.g. RELIANCE.NS' : 'e.g. AAPL, BTC'}

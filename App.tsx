@@ -293,13 +293,14 @@ const App: React.FC = () => {
   };
 
   const handleAnalyze = useCallback(async (symbol: MarketSymbol) => {
-    const balances = JSON.parse(localStorage.getItem('pulser_balances') || '{}');
+    // Re-read balances at start of each individual scan to ensure up-to-date data
+    const currentBalances = JSON.parse(localStorage.getItem('pulser_balances') || '{}');
     const ipKey = `ip_${userIp}`;
     
     // Determine effective balance based on IP restriction
     let effectiveBalance = 0;
-    if (userIp && balances[ipKey] !== undefined) {
-      effectiveBalance = balances[ipKey];
+    if (userIp && currentBalances[ipKey] !== undefined) {
+      effectiveBalance = currentBalances[ipKey];
     } else if (user) {
       effectiveBalance = user.balance;
     } else {
@@ -323,6 +324,17 @@ const App: React.FC = () => {
       return;
     }
 
+    // Deduct balance immediately when the scan starts
+    const newBalance = Math.max(0, effectiveBalance - SCAN_COST);
+    const updatedBalances = { ...currentBalances };
+    if (userIp) updatedBalances[ipKey] = newBalance;
+    if (user) updatedBalances[user.email] = newBalance;
+    localStorage.setItem('pulser_balances', JSON.stringify(updatedBalances));
+
+    if (user) {
+      setUser(prev => prev ? { ...prev, balance: newBalance } : null);
+    }
+
     setState(prev => ({
       ...prev,
       analyses: {
@@ -333,19 +345,6 @@ const App: React.FC = () => {
 
     try {
       const result = await pulser.analyzeSymbol(symbol);
-      
-      // Deduct balance from IP and User
-      const newBalance = Math.max(0, effectiveBalance - SCAN_COST);
-      
-      const newBalances = { ...balances };
-      if (userIp) newBalances[ipKey] = newBalance;
-      if (user) newBalances[user.email] = newBalance;
-      localStorage.setItem('pulser_balances', JSON.stringify(newBalances));
-
-      if (user) {
-        setUser({ ...user, balance: newBalance });
-      }
-
       setState(prev => ({
         ...prev,
         analyses: {
@@ -367,7 +366,7 @@ const App: React.FC = () => {
         }
       }));
     }
-  }, []);
+  }, [user, userIp]);
 
   const handleRefreshPrice = useCallback(async (symbol: MarketSymbol) => {
     try {
@@ -601,8 +600,8 @@ const App: React.FC = () => {
               onClick={() => setIsAddModalOpen(true)}
               className={`w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl border-t border-l font-black text-xs uppercase tracking-widest transition-all whitespace-nowrap shadow-2xl active:scale-95 ${
                 theme === 'dark' 
-                  ? 'bg-linear-to-br from-emerald-400 via-emerald-600 to-emerald-800 border-white/20 shadow-emerald-500/40 text-white hover:brightness-110' 
-                  : 'bg-linear-to-br from-emerald-400 via-emerald-500 to-emerald-600 border-white/30 shadow-emerald-600/30 text-white hover:brightness-110 hover:shadow-emerald-600/50'
+                  ? 'bg-blue-600 hover:bg-blue-500 border-white/10 shadow-blue-900/40 text-white hover:brightness-110' 
+                  : 'bg-blue-600 hover:bg-blue-700 border-white/20 shadow-blue-500/30 text-white hover:brightness-110'
               }`}
             >
               <Plus className="w-4 h-4" /> Add Symbol
@@ -700,7 +699,7 @@ const App: React.FC = () => {
             <p className="text-sm max-w-xs text-center mt-2 text-slate-500">No symbols matching your search. Add a new ticker symbol to start the pulse scan.</p>
             <button 
               onClick={() => setIsAddModalOpen(true)}
-              className="mt-8 bg-linear-to-br from-emerald-400 to-emerald-600 text-white border-t border-l border-white/20 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-emerald-500/20 active:scale-95"
+              className="mt-8 bg-blue-600 text-white border-t border-l border-white/20 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 transition-all shadow-xl shadow-blue-900/20 active:scale-95"
             >
               Track New Symbol
             </button>
