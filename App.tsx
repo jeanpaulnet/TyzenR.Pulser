@@ -439,13 +439,13 @@ const App: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'UserEmail': supportUserEmail || user?.email || '',
-          'UserName': supportUserName || user?.name || ''
+          'Email': supportUserEmail || user?.email || '',
+          'Name': supportUserName || user?.name || ''
         },
         body: JSON.stringify({
-          AppName: supportAppName,
-          UserName: supportUserName || user?.name || '',
-          UserEmail: supportUserEmail || user?.email || '',
+          App: supportAppName,
+          Name: supportUserName || user?.name || '',
+          Email: supportUserEmail || user?.email || '',
           Message: supportMessage
         })
       });
@@ -826,10 +826,10 @@ const App: React.FC = () => {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-2">UserName</label>
+                      <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-2">Name</label>
                       <input 
                         type="text"
-                        placeholder="UserName"
+                        placeholder="Name"
                         value={supportUserName}
                         onChange={(e) => setSupportUserName(e.target.value)}
                         disabled={isSendingSupport}
@@ -837,10 +837,10 @@ const App: React.FC = () => {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-2">UserEmail</label>
+                      <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-2">Email</label>
                       <input 
                         type="email"
-                        placeholder="UserEmail"
+                        placeholder="Email"
                         value={supportUserEmail}
                         onChange={(e) => setSupportUserEmail(e.target.value)}
                         disabled={isSendingSupport}
@@ -849,10 +849,10 @@ const App: React.FC = () => {
                     </div>
                   </div>
                   <div className="space-y-1 text-left">
-                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-2">AppName</label>
+                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-2">App</label>
                     <input 
                       type="text"
-                      placeholder="AppName"
+                      placeholder="App"
                       value={supportAppName}
                       onChange={(e) => setSupportAppName(e.target.value)}
                       disabled={isSendingSupport}
