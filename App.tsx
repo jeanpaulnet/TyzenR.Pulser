@@ -532,7 +532,13 @@ const App: React.FC = () => {
                         </div>
                         <button 
                           onClick={() => { setIsUserMenuOpen(false); setIsSupportModalOpen(true); }}
-                          className={`w-full mt-2 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}
+                          className={`w-full mt-2 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                            Math.floor((user?.balance || 0) / SCAN_COST) > 10 
+                              ? (theme === 'dark' ? 'bg-slate-500/10 text-slate-400 hover:bg-slate-500/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')
+                              : Math.floor((user?.balance || 0) / SCAN_COST) > 0
+                                ? (theme === 'dark' ? 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20' : 'bg-blue-50 text-blue-600 hover:bg-blue-100')
+                                : (theme === 'dark' ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20' : 'bg-rose-50 text-rose-600 hover:bg-rose-100')
+                          }`}
                         >
                           Recharge ($10 / 100 Scans)
                         </button>
@@ -580,7 +586,7 @@ const App: React.FC = () => {
           <div className="w-full md:w-auto">
             <button 
               onClick={() => setIsAddModalOpen(true)}
-              className={`w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl border font-black text-xs uppercase tracking-widest transition-all whitespace-nowrap shadow-xl active:scale-95 ${theme === 'dark' ? 'bg-purple-600 hover:bg-purple-700 border-purple-500 shadow-purple-600/30 text-white' : 'bg-purple-600 hover:bg-purple-700 border-purple-500 shadow-purple-600/30 text-white'}`}
+              className={`w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl border font-black text-xs uppercase tracking-widest transition-all whitespace-nowrap shadow-xl active:scale-95 ${theme === 'dark' ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-500 shadow-emerald-600/30 text-white' : 'bg-emerald-600 hover:bg-emerald-700 border-emerald-500 shadow-emerald-600/30 text-white'}`}
             >
               <Plus className="w-4 h-4" /> Add Symbol
             </button>
@@ -677,7 +683,7 @@ const App: React.FC = () => {
             <p className="text-sm max-w-xs text-center mt-2 text-slate-500">No symbols matching your search. Add a new ticker symbol to start the pulse scan.</p>
             <button 
               onClick={() => setIsAddModalOpen(true)}
-              className="mt-8 bg-purple-500/10 text-purple-500 border border-purple-500/20 px-6 py-2 rounded-full font-bold hover:bg-purple-500 hover:text-white transition-all"
+              className="mt-8 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-6 py-2 rounded-full font-bold hover:bg-emerald-500 hover:text-white transition-all"
             >
               Track New Symbol
             </button>
