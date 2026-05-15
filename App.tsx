@@ -566,7 +566,7 @@ const App: React.FC = () => {
               onClick={handleScanAll}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm transition-all active:scale-95 shadow-lg ${theme === 'dark' ? 'bg-white text-slate-950 hover:bg-emerald-500 hover:text-white shadow-emerald-500/10' : 'bg-white text-purple-700 hover:bg-purple-50 shadow-purple-900/20'}`}
             >
-              <Activity className="w-4 h-4" /> <span className="hidden sm:inline">Refresh All</span>
+              <Activity className="w-4 h-4" /> <span className="hidden sm:inline">SCAN ALL</span>
             </button>
           </div>
         </div>
@@ -580,7 +580,7 @@ const App: React.FC = () => {
           <div className="w-full md:w-auto">
             <button 
               onClick={() => setIsAddModalOpen(true)}
-              className={`w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl border font-black text-xs uppercase tracking-widest transition-all whitespace-nowrap shadow-xl active:scale-95 ${theme === 'dark' ? 'bg-blue-600 hover:bg-blue-700 border-blue-500 shadow-blue-600/30 text-white' : 'bg-indigo-600 hover:bg-indigo-700 border-indigo-500 shadow-indigo-600/30 text-white'}`}
+              className={`w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl border font-black text-xs uppercase tracking-widest transition-all whitespace-nowrap shadow-xl active:scale-95 ${theme === 'dark' ? 'bg-purple-600 hover:bg-purple-700 border-purple-500 shadow-purple-600/30 text-white' : 'bg-purple-600 hover:bg-purple-700 border-purple-500 shadow-purple-600/30 text-white'}`}
             >
               <Plus className="w-4 h-4" /> Add Symbol
             </button>
@@ -677,7 +677,7 @@ const App: React.FC = () => {
             <p className="text-sm max-w-xs text-center mt-2 text-slate-500">No symbols matching your search. Add a new ticker symbol to start the pulse scan.</p>
             <button 
               onClick={() => setIsAddModalOpen(true)}
-              className="mt-8 bg-blue-500/10 text-blue-500 border border-blue-500/20 px-6 py-2 rounded-full font-bold hover:bg-blue-500 hover:text-white transition-all"
+              className="mt-8 bg-purple-500/10 text-purple-500 border border-purple-500/20 px-6 py-2 rounded-full font-bold hover:bg-purple-500 hover:text-white transition-all"
             >
               Track New Symbol
             </button>
