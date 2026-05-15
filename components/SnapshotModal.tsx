@@ -91,7 +91,10 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
 
   const PriceChart: React.FC<{ analysis?: PulserAnalysis; theme: 'light' | 'dark' }> = ({ analysis, theme }) => {
     const [range, setRange] = React.useState<'1M' | '1Y' | '5Y'>('1Y');
-    const historicalData = analysis?.snapshot?.historicalData?.[range] || [];
+    const historicalData = React.useMemo(() => {
+      const data = analysis?.snapshot?.historicalData?.[range] || [];
+      return [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }, [analysis, range]);
 
     const ranges: { label: string; value: '1M' | '1Y' | '5Y' }[] = [
       { label: '1M', value: '1M' },

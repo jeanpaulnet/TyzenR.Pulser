@@ -86,6 +86,24 @@ const App: React.FC = () => {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [userIp, setUserIp] = useState<string>('');
+
+  // Fetch IP
+  useEffect(() => {
+    fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(data => {
+        setUserIp(data.ip);
+        // Initialize guest balance if needed
+        const balances = JSON.parse(localStorage.getItem('pulser_balances') || '{}');
+        const ipKey = `ip_${data.ip}`;
+        if (balances[ipKey] === undefined) {
+          balances[ipKey] = 10.00;
+          localStorage.setItem('pulser_balances', JSON.stringify(balances));
+        }
+      })
+      .catch(() => setUserIp('local-fallback'));
+  }, []);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [supportMessage, setSupportMessage] = useState('');
@@ -113,11 +131,20 @@ const App: React.FC = () => {
       try {
         const decoded: any = jwtDecode(response.credential);
         const balances = JSON.parse(localStorage.getItem('pulser_balances') || '{}');
+        
+        // Find balance by email OR by IP if limited
         let currentBalance = balances[decoded.email];
         if (currentBalance === undefined) {
-          currentBalance = 10.00;
-          balances[decoded.email] = 10.00;
-          localStorage.setItem('pulser_balances', JSON.stringify(balances));
+          // Check if this IP already has a balance allocated
+          const ipBalanceKey = `ip_${userIp}`;
+          if (balances[ipBalanceKey] !== undefined) {
+             currentBalance = balances[ipBalanceKey];
+          } else {
+             currentBalance = 10.00;
+             balances[decoded.email] = 10.00;
+             balances[ipBalanceKey] = 10.00;
+             localStorage.setItem('pulser_balances', JSON.stringify(balances));
+          }
         }
 
         const profile: UserProfile = {
@@ -226,9 +253,22 @@ const App: React.FC = () => {
   };
 
   const handleAnalyze = useCallback(async (symbol: MarketSymbol) => {
+    const balances = JSON.parse(localStorage.getItem('pulser_balances') || '{}');
+    const ipKey = `ip_${userIp}`;
+    
+    // Determine effective balance based on IP restriction
+    let effectiveBalance = 0;
+    if (userIp && balances[ipKey] !== undefined) {
+      effectiveBalance = balances[ipKey];
+    } else if (user) {
+      effectiveBalance = user.balance;
+    } else {
+      // Fallback if IP not loaded yet
+      effectiveBalance = 10.00; 
+    }
+
     // Check balance
-    if (user && user.balance < SCAN_COST) {
-      // For now we just don't analyze, could show a toast or modal
+    if (effectiveBalance < SCAN_COST) {
       setState(prev => ({
         ...prev,
         analyses: {
@@ -236,7 +276,7 @@ const App: React.FC = () => {
           [symbol.id]: { 
             ...(prev.analyses[symbol.id] || {}), 
             isAnalyzing: false,
-            summary: `Insufficient balance ($${SCAN_COST.toFixed(2)} required per scan). Please contact support to top up.`
+            summary: `Insufficient balance ($${SCAN_COST.toFixed(2)} required per scan). Please recharge or login to refresh.`
           } as PulserAnalysis
         }
       }));
@@ -254,16 +294,16 @@ const App: React.FC = () => {
     try {
       const result = await pulser.analyzeSymbol(symbol);
       
-      // Deduct balance
+      // Deduct balance from IP and User
+      const newBalance = Math.max(0, effectiveBalance - SCAN_COST);
+      
+      const newBalances = { ...balances };
+      if (userIp) newBalances[ipKey] = newBalance;
+      if (user) newBalances[user.email] = newBalance;
+      localStorage.setItem('pulser_balances', JSON.stringify(newBalances));
+
       if (user) {
-        const newBalance = Math.max(0, user.balance - SCAN_COST);
-        const updatedUser = { ...user, balance: newBalance };
-        setUser(updatedUser);
-        
-        // Persist balance
-        const balances = JSON.parse(localStorage.getItem('pulser_balances') || '{}');
-        balances[user.email] = newBalance;
-        localStorage.setItem('pulser_balances', JSON.stringify(balances));
+        setUser({ ...user, balance: newBalance });
       }
 
       setState(prev => ({
@@ -316,10 +356,6 @@ const App: React.FC = () => {
   };
 
   const handleAddSymbol = (symbol: MarketSymbol) => {
-    if (state.symbols.length >= 2 && !user) {
-      setIsLoginModalOpen(true);
-      return;
-    }
     setState(prev => ({
       ...prev,
       symbols: [symbol, ...prev.symbols]
@@ -603,18 +639,18 @@ const App: React.FC = () => {
         </div>
 
         {filteredSymbols.length === 0 && (
-            <div className={`col-span-full py-24 flex flex-col items-center justify-center rounded-[3rem] border border-dashed ${theme === 'dark' ? 'text-slate-500 bg-slate-900/30 border-slate-800' : 'text-slate-400 bg-slate-100/50 border-slate-200'}`}>
-              <Globe className="w-16 h-16 mb-6 opacity-10" />
-              <p className={`text-xl font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Market Silence</p>
-              <p className="text-sm max-w-xs text-center mt-2 text-slate-500">No symbols matching your search. Add a new ticker symbol to start the pulse scan.</p>
-              <button 
-                onClick={() => setIsAddModalOpen(true)}
-                className="mt-8 bg-blue-500/10 text-blue-500 border border-blue-500/20 px-6 py-2 rounded-full font-bold hover:bg-blue-500 hover:text-white transition-all"
-              >
-                Track New Symbol
-              </button>
-            </div>
-          )}
+          <div className={`col-span-full py-24 flex flex-col items-center justify-center rounded-[3rem] border border-dashed ${theme === 'dark' ? 'text-slate-500 bg-slate-900/30 border-slate-800' : 'text-slate-400 bg-slate-100/50 border-slate-200'}`}>
+            <Globe className="w-16 h-16 mb-6 opacity-10" />
+            <p className={`text-xl font-bold ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Market Silence</p>
+            <p className="text-sm max-w-xs text-center mt-2 text-slate-500">No symbols matching your search. Add a new ticker symbol to start the pulse scan.</p>
+            <button 
+              onClick={() => setIsAddModalOpen(true)}
+              className="mt-8 bg-blue-500/10 text-blue-500 border border-blue-500/20 px-6 py-2 rounded-full font-bold hover:bg-blue-500 hover:text-white transition-all"
+            >
+              Track New Symbol
+            </button>
+          </div>
+        )}
       </main>
 
       {/* Footer */}
@@ -675,7 +711,7 @@ const App: React.FC = () => {
               <div className="space-y-2">
                 <h2 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Login Required</h2>
                 <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                  You can track up to 2 symbols for free. Login with Google to unlock unlimited tracking and advanced AI insights.
+                  Login with Google to unlock tracking and advanced AI insights. Each account is limited to 100 scans, bound by your IP address.
                 </p>
               </div>
 
@@ -685,7 +721,7 @@ const App: React.FC = () => {
                 onClick={() => setIsLoginModalOpen(false)}
                 className="text-xs font-bold text-slate-500 hover:text-emerald-500 dark:hover:text-white uppercase tracking-widest transition-colors"
               >
-                Maybe Later
+                Close
               </button>
             </div>
           </div>
