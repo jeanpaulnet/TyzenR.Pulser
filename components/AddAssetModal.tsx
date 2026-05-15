@@ -16,6 +16,7 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
   const [region, setRegion] = useState<'US' | 'INDIA' | 'GLOBAL'>('US');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,12 +45,14 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
 
     setIsValidating(true);
     setError(null);
+    setSuggestion(null);
 
     try {
       const validation = await pulser.validateSymbol(trimmedSymbol, type, region);
       
       if (!validation.isValid) {
         setError(validation.reason || `Could not verify "${trimmedSymbol}" as a ${type.toLowerCase()} in ${region}. Please check the symbol and region.`);
+        setSuggestion(validation.suggestedSymbol || null);
         setIsValidating(false);
         return;
       }
@@ -96,11 +99,29 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
               />
               {error && (
-                <div className="flex items-center gap-2 mt-1.5 px-2 py-1.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-md">
-                  <Globe className="w-3 h-3 text-rose-500" />
-                  <p className="text-[10px] text-rose-500 font-bold">
-                    {error}
-                  </p>
+                <div className="flex flex-col gap-2 mt-1.5 p-2 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-3 h-3 text-rose-500" />
+                    <p className="text-[10px] text-rose-500 font-bold">
+                      {error}
+                    </p>
+                  </div>
+                  {suggestion && (
+                    <div className="flex items-center justify-between pl-5 pr-1 py-1 bg-white/50 dark:bg-black/20 rounded-md">
+                      <span className="text-[10px] text-slate-500 italic">Did you mean <span className="font-bold text-slate-700 dark:text-slate-300 not-italic uppercase">{suggestion}</span>?</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSymbol(suggestion);
+                          setSuggestion(null);
+                          setError(null);
+                        }}
+                        className="px-2 py-1 bg-emerald-500 text-white text-[9px] font-black uppercase rounded-md hover:bg-emerald-600 transition-colors shadow-sm"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

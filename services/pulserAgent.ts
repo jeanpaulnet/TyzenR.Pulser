@@ -31,15 +31,16 @@ export class PulserAgent {
   /**
    * Validates if a symbol exists in the chosen market/region.
    */
-  async validateSymbol(symbol: string, type: string, region: string): Promise<{ isValid: boolean; name?: string; reason?: string }> {
+  async validateSymbol(symbol: string, type: string, region: string): Promise<{ isValid: boolean; name?: string; reason?: string; suggestedSymbol?: string }> {
     try {
       const apiKey = await this.getApiKey();
       const ai = new GoogleGenAI({ apiKey });
 
       const prompt = `Quick verification: Does the market symbol "${symbol}" exist in the ${region} region as a ${type}? 
       Use Google Search to confirm. 
-      If it exists, return EXACTLY this JSON: {"isValid": true, "name": "Company/Asset Full Name"}
-      If it does not exist or is highly likely incorrect, return: {"isValid": false, "reason": "Short explanation why it might be invalid (e.g., symbol not found on NSE/BSE, or incorrect crypto pair)"}`;
+      If it exists EXACTLY, return EXACTLY this JSON: {"isValid": true, "name": "Company/Asset Full Name"}
+      If it does not exist as entered, but you found a highly likely match (e.g., the user entered a company name instead of a ticker, or missed a mandatory suffix like .NS for India), return: {"isValid": false, "suggestedSymbol": "TICKER", "name": "Company/Asset Full Name", "reason": "Found matching symbol for your input"}
+      If it does not exist or is incorrect, return: {"isValid": false, "reason": "Short explanation why it might be invalid"}`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",

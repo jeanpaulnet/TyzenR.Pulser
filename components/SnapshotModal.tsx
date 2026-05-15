@@ -208,13 +208,13 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-10 pointer-events-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 pointer-events-auto">
       <div 
         className="absolute inset-0 bg-slate-950/80 backdrop-blur-xl"
         onClick={onClose}
       />
       
-      <div className="relative w-full max-w-7xl max-h-[90vh] bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
+      <div className="relative w-full max-w-7xl h-[98vh] max-h-[98vh] bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-300">
         {/* Loading Overlay */}
         {(analysis?.isAnalyzing || isRefreshing) && (
           <div className="absolute inset-0 z-[20] flex flex-col items-center justify-center bg-white/60 dark:bg-slate-950/60 backdrop-blur-md px-6 text-center animate-in fade-in duration-500">

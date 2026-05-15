@@ -39,7 +39,20 @@ const SCAN_COST = 0.10;
 const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('pulser_user');
-    return saved ? JSON.parse(saved) : null;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Ensure balance exists even for legacy sessions
+        if (parsed && typeof parsed.balance !== 'number') {
+          const balances = JSON.parse(localStorage.getItem('pulser_balances') || '{}');
+          parsed.balance = balances[parsed.email] || balances[`ip_${localStorage.getItem('pulser_last_ip')}`] || 10.00;
+        }
+        return parsed;
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
   });
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -94,6 +107,7 @@ const App: React.FC = () => {
       .then(res => res.json())
       .then(data => {
         setUserIp(data.ip);
+        localStorage.setItem('pulser_last_ip', data.ip);
         // Initialize guest balance if needed
         const balances = JSON.parse(localStorage.getItem('pulser_balances') || '{}');
         const ipKey = `ip_${data.ip}`;
@@ -147,11 +161,24 @@ const App: React.FC = () => {
           }
         }
 
+        // Special credit for jeanpaulva@gmail.com
+        if (decoded.email === 'jeanpaulva@gmail.com') {
+          const credited = localStorage.getItem('pulser_credited_jeanpaul');
+          if (!credited) {
+            currentBalance += 10.00;
+            localStorage.setItem('pulser_credited_jeanpaul', 'true');
+            balances[decoded.email] = currentBalance;
+            const ipKey = `ip_${userIp}`;
+            if (userIp) balances[ipKey] = currentBalance;
+            localStorage.setItem('pulser_balances', JSON.stringify(balances));
+          }
+        }
+
         const profile: UserProfile = {
           email: decoded.email,
           name: decoded.name,
           picture: decoded.picture,
-          balance: currentBalance,
+          balance: currentBalance || 10.00,
         };
         setUser(profile);
         setIsLoginModalOpen(false);
@@ -465,15 +492,15 @@ const App: React.FC = () => {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className={`flex items-center gap-2 pl-1.5 pr-3 py-1 border rounded-full transition-all hover:bg-white/10 ${isUserMenuOpen ? 'bg-white/15 ring-2 ring-emerald-500/30' : 'bg-white/5 border-white/20'}`}
                 >
-                  <img src={user.picture} alt={user.name} className="w-7 h-7 rounded-full border border-emerald-400/30 shadow-sm" />
+                  <img src={user?.picture || ''} alt={user?.name || 'User'} className="w-7 h-7 rounded-full border border-emerald-400/30 shadow-sm" />
                   <span className={`text-xs font-bold hidden sm:inline text-white truncate max-w-[100px]`}>
-                    {user.name.split(' ')[0]}
+                    {(user?.name || 'User').split(' ')[0]}
                   </span>
                   <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-300 ${isUserMenuOpen ? 'rotate-180 text-white' : ''}`} />
                 </button>
 
                 <AnimatePresence>
-                  {isUserMenuOpen && (
+                  {isUserMenuOpen && user && (
                     <motion.div
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -483,18 +510,23 @@ const App: React.FC = () => {
                     >
                       <div className={`px-4 py-3 border-b ${theme === 'dark' ? 'border-zinc-800' : 'border-slate-100'}`}>
                         <p className={`text-[10px] font-black uppercase text-slate-500 tracking-widest`}>Account</p>
-                        <p className={`text-xs font-bold truncate mt-1 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{user.email}</p>
+                        <p className={`text-xs font-bold truncate mt-1 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{user?.email}</p>
                         <div className={`mt-2 p-2 rounded-xl border ${theme === 'dark' ? 'bg-zinc-950 border-zinc-800' : 'bg-slate-50 border-slate-100'}`}>
                           <div className="flex items-center justify-between">
                             <span className="text-[9px] font-black uppercase text-slate-400">Balance</span>
-                            <span className={`text-xs font-black ${user.balance > SCAN_COST ? 'text-emerald-500' : 'text-rose-500'}`}>
-                              ${user.balance.toFixed(2)}
-                            </span>
+                            <motion.span 
+                              key={user?.balance}
+                              initial={{ scale: 1.2, color: '#10b981' }}
+                              animate={{ scale: 1, color: (user?.balance || 0) > SCAN_COST ? '#10b981' : '#f43f5e' }}
+                              className="text-xs font-black"
+                            >
+                              ${(user?.balance || 0).toFixed(2)}
+                            </motion.span>
                           </div>
                           <div className="flex items-center justify-between mt-0.5">
                             <span className="text-[9px] font-black uppercase text-slate-400">Scans</span>
-                            <span className={`text-xs font-black ${user.balance > SCAN_COST ? 'text-emerald-500' : 'text-rose-500'}`}>
-                              {Math.floor(user.balance / SCAN_COST)} Left
+                            <span className={`text-xs font-black ${(user?.balance || 0) > SCAN_COST ? 'text-emerald-500' : 'text-rose-500'}`}>
+                              {Math.floor((user?.balance || 0) / SCAN_COST)} Left
                             </span>
                           </div>
                         </div>
