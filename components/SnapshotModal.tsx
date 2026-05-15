@@ -272,13 +272,13 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
         )}
 
         {/* Header */}
-        <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+        <div className="px-8 py-3 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
-               <Activity className="text-white w-6 h-6" />
+            <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
+               <Activity className="text-white w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+              <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
                 {symbol.symbol} 
                 <button 
                   onClick={handleRefresh}
@@ -288,7 +288,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                 >
                   <RefreshCw className={`w-4 h-4 ${(isRefreshing || analysis?.isAnalyzing) ? 'animate-spin text-indigo-500' : ''}`} />
                 </button>
-                <span className="text-slate-400 dark:text-slate-500 font-medium text-lg truncate">— {symbol.name}</span>
+                <span className="text-slate-400 dark:text-slate-500 font-medium text-xs truncate hidden sm:inline">— {symbol.name}</span>
                 {snapshot?.marketCap && (
                   <div className="ml-2 px-2 py-0.5 bg-slate-500/10 dark:bg-slate-500/20 rounded-lg border border-slate-500/20 flex items-center gap-2">
                     <span className="text-[7px] text-slate-400 uppercase font-black tracking-tighter">MCAP</span>
@@ -315,7 +315,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
         </div>
 
         {/* Content Scrollable Area */}
-        <div className="flex-1 overflow-y-auto p-8 bg-slate-50/30 dark:bg-slate-950/20">
+        <div className="flex-1 overflow-y-auto px-8 pb-8 pt-1 bg-slate-50/30 dark:bg-slate-950/20">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* Column 1 */}
