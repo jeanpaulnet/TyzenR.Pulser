@@ -315,7 +315,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
         </div>
 
         {/* Content Scrollable Area */}
-        <div className="flex-1 overflow-y-auto px-8 pb-8 pt-1 bg-slate-50/30 dark:bg-slate-950/20">
+        <div className="flex-1 overflow-y-auto px-8 pb-8 pt-0 bg-slate-50/30 dark:bg-slate-950/20">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* Column 1 */}
@@ -430,8 +430,8 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
               <PriceChart analysis={analysis} theme={theme} />
 
               {/* Growth Chart with bars */}
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-auto lg:min-h-[250px]">
-                <div className="flex justify-between items-center mb-6">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-auto lg:min-h-[180px]">
+                <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-500/10 rounded-xl text-blue-500">
                       <BarChart className="w-4 h-4" />
@@ -441,7 +441,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                   <span className="text-[10px] font-black text-slate-400 uppercase">REVENUE & PROFIT (BILLIONS {symbol.region === 'INDIA' ? '₹' : '$'})</span>
                 </div>
                 
-                <div className="w-full h-[220px] mt-2">
+                <div className="w-full h-[154px] mt-0">
                   {growthData.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <ReChartsBarChart data={growthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
