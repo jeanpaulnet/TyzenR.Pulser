@@ -58,6 +58,16 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
     }
   };
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const hasData = !!snapshot;
 
   const getTradingViewExchangeSymbol = () => {
@@ -129,7 +139,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
             ))}
           </div>
         </div>
-        <div className="h-[250px] w-full">
+        <div className="h-[150px] w-full">
           {historicalData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={historicalData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>

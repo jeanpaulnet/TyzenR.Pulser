@@ -101,6 +101,19 @@ const App: React.FC = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [userIp, setUserIp] = useState<string>('');
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsAddModalOpen(false);
+        setIsLoginModalOpen(false);
+        setIsSupportModalOpen(false);
+        setIsUserMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Fetch IP
   useEffect(() => {
     fetch('https://api.ipify.org?format=json')
@@ -586,7 +599,11 @@ const App: React.FC = () => {
           <div className="w-full md:w-auto">
             <button 
               onClick={() => setIsAddModalOpen(true)}
-              className={`w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl border font-black text-xs uppercase tracking-widest transition-all whitespace-nowrap shadow-xl active:scale-95 ${theme === 'dark' ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-500 shadow-emerald-600/30 text-white' : 'bg-emerald-600 hover:bg-emerald-700 border-emerald-500 shadow-emerald-600/30 text-white'}`}
+              className={`w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-2xl border-t border-l font-black text-xs uppercase tracking-widest transition-all whitespace-nowrap shadow-2xl active:scale-95 ${
+                theme === 'dark' 
+                  ? 'bg-linear-to-br from-emerald-400 via-emerald-600 to-emerald-800 border-white/20 shadow-emerald-500/40 text-white hover:brightness-110' 
+                  : 'bg-linear-to-br from-emerald-400 via-emerald-500 to-emerald-600 border-white/30 shadow-emerald-600/30 text-white hover:brightness-110 hover:shadow-emerald-600/50'
+              }`}
             >
               <Plus className="w-4 h-4" /> Add Symbol
             </button>
@@ -683,7 +700,7 @@ const App: React.FC = () => {
             <p className="text-sm max-w-xs text-center mt-2 text-slate-500">No symbols matching your search. Add a new ticker symbol to start the pulse scan.</p>
             <button 
               onClick={() => setIsAddModalOpen(true)}
-              className="mt-8 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-6 py-2 rounded-full font-bold hover:bg-emerald-500 hover:text-white transition-all"
+              className="mt-8 bg-linear-to-br from-emerald-400 to-emerald-600 text-white border-t border-l border-white/20 px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:brightness-110 transition-all shadow-xl shadow-emerald-500/20 active:scale-95"
             >
               Track New Symbol
             </button>
