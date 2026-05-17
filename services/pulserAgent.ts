@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { MarketSymbol, Sentiment, PulserAnalysis } from "../types";
+import { MarketSymbol, Sentiment, PulserAnalysis, MarketType } from "../types";
 
 export class PulserAgent {
   private cachedApiKey: string | null = null;
@@ -25,6 +25,39 @@ export class PulserAgent {
     } catch (error) {
       console.error('API Key Retrieval Failed:', error);
       throw new Error('Required API configuration missing. Please ensure GEMINI_API_KEY is set.');
+    }
+  }
+
+  /**
+   * Provides autocomplete suggestions for a prefix/query.
+   */
+  async searchSuggestions(query: string, region: string): Promise<{ symbol: string; name: string; type: MarketType }[]> {
+    if (!query || query.length < 2) return [];
+
+    try {
+      const apiKey = await this.getApiKey();
+      const ai = new GoogleGenAI({ apiKey });
+
+      const prompt = `Find 5-8 highly relevant market symbols (tickers) and company names matching "${query}" for the "${region}" region.
+      Include a mix of stocks and crypto if relevant.
+      Return ONLY a JSON array of objects: 
+      [{"symbol": "TICKER", "name": "Full Name", "type": "STOCK" | "CRYPTO" | "COMMODITY" | "INDEX"}]
+      
+      CRITICAL: Use exact tickers (e.g., AAPL, MSFT, RELIANCE.NS, BTC). Use the .NS suffix for Indian NSE stocks.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-1.5-flash", // Use faster model for suggestions
+        contents: prompt
+      });
+
+      const text = response.text || "";
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      const data = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+      
+      return data;
+    } catch (error) {
+      console.error('Search suggestions error:', error);
+      return [];
     }
   }
 

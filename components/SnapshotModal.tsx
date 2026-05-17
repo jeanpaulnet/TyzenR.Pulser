@@ -232,7 +232,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
               <div className="w-24 h-24 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
               <Activity className="absolute inset-0 m-auto w-10 h-10 text-indigo-500 animate-pulse" />
             </div>
-            <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Pulsing Intelligence...</h3>
+            <h3 className="text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">{analysis?.status || "Pulsing Intelligence..."}</h3>
             <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto font-medium">
               Synchronizing with global markets and synthesizing deep-dive metrics for {symbol.symbol}.
             </p>

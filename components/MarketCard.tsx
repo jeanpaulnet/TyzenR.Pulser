@@ -238,9 +238,9 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
             </div>
             <div className="text-center">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600">
-                {isAnalyzing ? 'Synthesizing Markets' : 'Click Refresh to start AI Engine for this symbol'}
+                {isAnalyzing ? (analysis?.status || 'Synthesizing Markets') : 'Click Refresh to start AI Engine'}
               </p>
-              {isAnalyzing && <p className="text-[9px] text-slate-500 dark:text-slate-700 mt-1">Checking Reuters, Bloomberg, WSJ...</p>}
+              {isAnalyzing && !analysis?.status && <p className="text-[9px] text-slate-500 dark:text-slate-700 mt-1">Checking Reuters, Bloomberg, WSJ...</p>}
             </div>
           </div>
         )}

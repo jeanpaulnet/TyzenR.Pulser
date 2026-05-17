@@ -12,13 +12,45 @@ interface AddSymbolModalProps {
 
 const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existingSymbols }) => {
   const [symbol, setSymbol] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [type, setType] = useState<MarketType>(MarketType.STOCK);
   const [region, setRegion] = useState<'US' | 'INDIA' | 'GLOBAL'>('US');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [searchSuggestions, setSearchSuggestions] = useState<{ symbol: string; name: string; type: MarketType }[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (symbol && symbol.length >= 2) {
+        setIsSearching(true);
+        try {
+          const results = await pulser.searchSuggestions(symbol, region);
+          setSearchSuggestions(results);
+          
+          // If we have an exact match or a first result, update company name placeholder
+          if (results.length > 0) {
+            const exactMatch = results.find(r => r.symbol.toUpperCase() === symbol.toUpperCase());
+            if (exactMatch) {
+              setCompanyName(exactMatch.name);
+              setType(exactMatch.type);
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch suggestions:', err);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchSuggestions([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [symbol, region]);
 
   useEffect(() => {
     // Focus the input when the modal opens
@@ -78,7 +110,7 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
       onAdd({
         id: Date.now().toString(),
         symbol: trimmedSymbol,
-        name: validation.name || trimmedSymbol,
+        name: validation.name || companyName || trimmedSymbol,
         type,
         region,
         notes: notes.trim() || undefined
@@ -106,17 +138,61 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div className="space-y-3">
-            <div>
+            <div className="relative">
               <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Market Symbol</label>
-              <input
-                ref={inputRef}
-                type="text"
-                required
-                placeholder={region === 'INDIA' ? 'e.g. RELIANCE.NS' : 'e.g. AAPL, BTC'}
-                value={symbol}
-                onChange={(e) => setSymbol(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
-              />
+              <div className="relative">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  required
+                  placeholder={region === 'INDIA' ? 'e.g. RELIANCE.NS' : 'e.g. AAPL, BTC'}
+                  value={symbol}
+                  onChange={(e) => setSymbol(e.target.value)}
+                  autoComplete="off"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                />
+                {isSearching && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
+                  </div>
+                )}
+              </div>
+
+              {/* Autocomplete Dropdown */}
+              {searchSuggestions.length > 0 && (
+                <div className="absolute z-10 left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto">
+                  {searchSuggestions.map((suggestion, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setSymbol(suggestion.symbol);
+                        setCompanyName(suggestion.name);
+                        setType(suggestion.type);
+                        setSearchSuggestions([]);
+                      }}
+                      className="w-full px-4 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors"
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-blue-600 dark:text-blue-400 text-xs">{suggestion.symbol}</span>
+                        <span className="text-[8px] bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded text-slate-500 font-bold uppercase">{suggestion.type}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{suggestion.name}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Company Name Label */}
+              {companyName && (
+                <div className="mt-1.5 flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-lg">
+                  <div className="p-1 bg-blue-500/20 rounded-md">
+                    <LineChart className="w-2.5 h-2.5 text-blue-500" />
+                  </div>
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 truncate tracking-tight">{companyName}</span>
+                </div>
+              )}
+
               {error && (
                 <div className="flex flex-col gap-2 mt-1.5 p-2 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-lg">
                   <div className="flex items-center gap-2">

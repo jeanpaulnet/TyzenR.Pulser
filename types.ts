@@ -31,6 +31,7 @@ export interface PulserAnalysis {
   sources: { title: string; url: string }[];
   lastUpdated: string;
   isAnalyzing: boolean;
+  status?: string;
   currentPrice?: string;
   currencySymbol?: string;
   // Snapshot Data

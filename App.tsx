@@ -36,6 +36,16 @@ declare global {
 // Scan cost constant
 const SCAN_COST = 0.10;
 
+const PROGRESS_STATUSES = [
+  "Searching News & Filings...",
+  "Fetching Financial Data...",
+  "Fetching Price Action...",
+  "Analyzing Technical Mood...",
+  "Synthesizing Financial Pulse...",
+  "Calculating Valuation Metrics...",
+  "Finalizing Deep-Dive Snapshot..."
+];
+
 const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('pulser_user');
@@ -349,20 +359,46 @@ const App: React.FC = () => {
       ...prev,
       analyses: {
         ...prev.analyses,
-        [symbol.id]: { ...(prev.analyses[symbol.id] || {}), isAnalyzing: true } as PulserAnalysis
+        [symbol.id]: { 
+          ...(prev.analyses[symbol.id] || {}), 
+          isAnalyzing: true,
+          status: PROGRESS_STATUSES[0]
+        } as PulserAnalysis
       }
     }));
 
+    // Rotate status messages every 2.5 seconds
+    let statusIndex = 0;
+    const statusInterval = setInterval(() => {
+      statusIndex = (statusIndex + 1) % PROGRESS_STATUSES.length;
+      setState(prev => {
+        const current = prev.analyses[symbol.id];
+        if (!current || !current.isAnalyzing) return prev;
+        return {
+          ...prev,
+          analyses: {
+            ...prev.analyses,
+            [symbol.id]: {
+              ...current,
+              status: PROGRESS_STATUSES[statusIndex]
+            }
+          }
+        };
+      });
+    }, 2500);
+
     try {
       const result = await pulser.analyzeSymbol(symbol);
+      clearInterval(statusInterval);
       setState(prev => ({
         ...prev,
         analyses: {
           ...prev.analyses,
-          [symbol.id]: result
+          [symbol.id]: { ...result, status: undefined }
         }
       }));
     } catch (error: any) {
+      clearInterval(statusInterval);
       console.error(`Analysis failed for ${symbol.symbol}:`, error);
       setState(prev => ({
         ...prev,
@@ -371,6 +407,7 @@ const App: React.FC = () => {
           [symbol.id]: { 
             ...(prev.analyses[symbol.id] || {}), 
             isAnalyzing: false,
+            status: undefined,
             summary: "Market connection pulse failed. Please verify engine connectivity."
           } as PulserAnalysis
         }
@@ -409,6 +446,8 @@ const App: React.FC = () => {
       ...prev,
       symbols: [symbol, ...prev.symbols]
     }));
+    // Ensure we don't scroll to bottom by explicitly scrolling to top where the new item is prepended
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     handleAnalyze(symbol);
   };
 
