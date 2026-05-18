@@ -2,7 +2,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { MarketSymbol, PulserAnalysis, MarketType } from '../types';
-import { X, TrendingUp, BarChart, Info, Users, Zap, Search, Activity, Target, ExternalLink, Newspaper, RefreshCw, Clock } from 'lucide-react';
+import { X, TrendingUp, BarChart, Info, Users, Zap, Search, Activity, Target, ExternalLink, Newspaper, RefreshCw, Clock, Share2, Check } from 'lucide-react';
 import { BarChart as ReChartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend, AreaChart, Area } from 'recharts';
 
 interface SnapshotModalProps {
@@ -25,6 +25,26 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
 
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [lookedUpExchangeSymbol, setLookedUpExchangeSymbol] = React.useState<string | null>(null);
+  const [showCopied, setShowCopied] = React.useState(false);
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Pulser AI - ${symbol.symbol} Snapshot`,
+          text: `Check out the AI-powered market pulse and snapshot for ${symbol.symbol} on Pulser AI.`,
+          url: url,
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShowCopied(true);
+        setTimeout(() => setShowCopied(false), 2000);
+      }
+    } catch (err) {
+      console.error('Failed to share:', err);
+    }
+  };
 
   React.useEffect(() => {
     const lookupSymbol = async () => {
@@ -288,6 +308,12 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                 >
                   <RefreshCw className={`w-4 h-4 ${(isRefreshing || analysis?.isAnalyzing) ? 'animate-spin text-indigo-500' : ''}`} />
                 </button>
+                {analysis?.fromCache && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20 rounded-lg">
+                    <Clock className="w-2.5 h-2.5 text-amber-500" />
+                    <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest">24H CACHE</span>
+                  </div>
+                )}
                 <span className="text-slate-400 dark:text-slate-500 font-medium text-xs truncate hidden sm:inline">— {symbol.name}</span>
                 {snapshot?.marketCap && (
                   <div className="ml-2 px-2 py-0.5 bg-slate-500/10 dark:bg-slate-500/20 rounded-lg border border-slate-500/20 flex items-center gap-2">
@@ -676,6 +702,24 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
              Analyzed using Pulser AI Global Search grounding • Synced: {analysis?.lastUpdated ? new Date(analysis.lastUpdated).toLocaleString() : 'Just now'}
            </p>
            <div className="flex gap-4">
+              <button 
+                onClick={handleShare}
+                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                  showCopied 
+                    ? 'bg-emerald-500 text-white' 
+                    : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 hover:bg-blue-500/20'
+                }`}
+              >
+                {showCopied ? (
+                  <>
+                    <Check className="w-3 h-3" /> COPIED
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-3 h-3" /> SHARE
+                  </>
+                )}
+              </button>
               <button 
                 onClick={onClose}
                 className="bg-slate-950 dark:bg-white text-white dark:text-slate-950 px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:opacity-80 transition-all"

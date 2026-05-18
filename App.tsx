@@ -5,6 +5,7 @@ import { INITIAL_SYMBOLS } from './constants';
 import { pulser } from './services/pulserAgent';
 import MarketCard from './components/MarketCard';
 import AddSymbolModal from './components/AddAssetModal';
+import SnapshotModal from './components/SnapshotModal';
 import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon, LogOut, Mail, Send, CheckCircle2, GripHorizontal, ChevronDown } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode';
 import { motion, AnimatePresence } from 'motion/react';
@@ -110,6 +111,17 @@ const App: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [userIp, setUserIp] = useState<string>('');
+  const [selectedSymbolKey, setSelectedSymbolKey] = useState<{symbol: string, region: string} | null>(null);
+
+  // Sync with URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const symbol = params.get('symbol');
+    const region = params.get('region') || 'US';
+    if (symbol) {
+      setSelectedSymbolKey({ symbol, region });
+    }
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -462,6 +474,40 @@ const App: React.FC = () => {
     });
   };
 
+  useEffect(() => {
+    if (selectedSymbolKey) {
+      const existingSymbol = state.symbols.find(s => s.symbol === selectedSymbolKey.symbol && s.region === selectedSymbolKey.region) || 
+                            INITIAL_SYMBOLS.find(s => s.symbol === selectedSymbolKey.symbol && s.region === selectedSymbolKey.region);
+      
+      const symbolToAnalyze = existingSymbol || {
+        id: `shared_${selectedSymbolKey.symbol}`,
+        symbol: selectedSymbolKey.symbol,
+        name: selectedSymbolKey.symbol,
+        type: MarketType.STOCK,
+        region: selectedSymbolKey.region as any
+      };
+
+      const analysis = state.analyses[symbolToAnalyze.id] || Object.values(state.analyses).find(a => a.symbolId.startsWith('shared_') && a.symbolId.includes(selectedSymbolKey.symbol));
+      
+      if (!analysis || (!analysis.isAnalyzing && !analysis.snapshot)) {
+        handleAnalyze(symbolToAnalyze);
+      }
+    }
+  }, [selectedSymbolKey, handleAnalyze, state.analyses, state.symbols]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (selectedSymbolKey) {
+      params.set('symbol', selectedSymbolKey.symbol);
+      params.set('region', selectedSymbolKey.region);
+    } else {
+      params.delete('symbol');
+      params.delete('region');
+    }
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [selectedSymbolKey]);
+
   const filteredSymbols = state.symbols.filter(symbol => {
     const matchesSearch = symbol.symbol.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          symbol.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -711,6 +757,7 @@ const App: React.FC = () => {
                   onRefresh={handleAnalyze}
                   onRefreshPrice={handleRefreshPrice}
                   onRemove={handleRemoveSymbol}
+                  onOpenSnapshot={() => setSelectedSymbolKey({ symbol: symbol.symbol, region: symbol.region })}
                   showHint={index === 0 && Object.keys(state.analyses).length === 0 && searchQuery === ''}
                 />
               ))}
@@ -734,6 +781,7 @@ const App: React.FC = () => {
                       onRefresh={handleAnalyze}
                       onRefreshPrice={handleRefreshPrice}
                       onRemove={handleRemoveSymbol}
+                      onOpenSnapshot={() => setSelectedSymbolKey({ symbol: symbol.symbol, region: symbol.region })}
                       isSortable={true}
                       showHint={index === 0 && Object.keys(state.analyses).length === 0}
                     />
@@ -805,6 +853,28 @@ const App: React.FC = () => {
           existingSymbols={state.symbols}
         />
       )}
+
+      {selectedSymbolKey && (() => {
+        const existingSymbol = state.symbols.find(s => s.symbol === selectedSymbolKey.symbol && s.region === selectedSymbolKey.region) || 
+                              INITIAL_SYMBOLS.find(s => s.symbol === selectedSymbolKey.symbol && s.region === selectedSymbolKey.region);
+        
+        const symbolToDisplay = existingSymbol || {
+          id: `shared_${selectedSymbolKey.symbol}`,
+          symbol: selectedSymbolKey.symbol,
+          name: selectedSymbolKey.symbol,
+          type: MarketType.STOCK,
+          region: selectedSymbolKey.region as any
+        };
+
+        return (
+          <SnapshotModal 
+            symbol={symbolToDisplay}
+            analysis={state.analyses[symbolToDisplay.id] || Object.values(state.analyses).find(a => a.symbolId.startsWith('shared_') && a.symbolId.includes(selectedSymbolKey.symbol))}
+            onClose={() => setSelectedSymbolKey(null)}
+            onRefresh={() => handleAnalyze(symbolToDisplay)}
+          />
+        );
+      })()}
 
       {isLoginModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">

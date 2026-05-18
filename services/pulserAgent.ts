@@ -1,6 +1,8 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { MarketSymbol, Sentiment, PulserAnalysis, MarketType } from "../types";
+import { getFirebaseDb } from "./firebase";
+import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 
 export class PulserAgent {
   private cachedApiKey: string | null = null;
@@ -119,6 +121,36 @@ export class PulserAgent {
 
   async analyzeSymbol(symbol: MarketSymbol): Promise<PulserAnalysis> {
     try {
+      // 1. Check Global Firestore Cache (24h)
+      const db = await getFirebaseDb();
+      if (db) {
+        try {
+          // Use symbol as key to share across users
+          const cacheRef = doc(db!, "analysis_cache", symbol.symbol);
+          const cacheSnap = await getDoc(cacheRef);
+          
+          if (cacheSnap.exists()) {
+            const cachedData = cacheSnap.data();
+            const lastUpdated = cachedData.lastUpdated as Timestamp;
+            const now = Timestamp.now();
+            
+            // Check if less than 24 hours old (24 * 60 * 60 seconds)
+            if (now.seconds - lastUpdated.seconds < 86400) {
+              console.log(`Using cached analysis for ${symbol.symbol}`);
+              return {
+                ...cachedData.analysis,
+                symbolId: symbol.id, // Keep the specific ID for the local UI state
+                isAnalyzing: false,
+                lastUpdated: lastUpdated.toDate().toISOString(),
+                fromCache: true // Marker for UI if needed
+              };
+            }
+          }
+        } catch (cacheError) {
+          console.warn("Cache lookup failed, proceeding with fresh scan:", cacheError);
+        }
+      }
+
       const apiKey = await this.getApiKey();
       const ai = new GoogleGenAI({ apiKey });
 
@@ -327,7 +359,7 @@ export class PulserAgent {
         })).filter((p: any) => !isNaN(p.price) && p.price > 0);
       });
 
-      return {
+      const analysisResult: PulserAnalysis = {
         symbolId: symbol.id,
         shortTermTrend: (data.shortTermTrend || Sentiment.NEUTRAL) as Sentiment,
         longTermTrend: (data.longTermTrend || Sentiment.NEUTRAL) as Sentiment,
@@ -360,6 +392,21 @@ export class PulserAgent {
         lastUpdated: new Date().toISOString(),
         isAnalyzing: false
       };
+
+      // 4. Save to Cache if Firestore is available
+      if (db) {
+        try {
+          const cacheRef = doc(db!, "analysis_cache", symbol.symbol);
+          await setDoc(cacheRef, {
+            analysis: analysisResult,
+            lastUpdated: serverTimestamp()
+          });
+        } catch (cacheSaveError) {
+          console.warn("Failed to save to global cache:", cacheSaveError);
+        }
+      }
+
+      return analysisResult;
     } catch (error) {
       console.error(`AI Insight Error [${symbol.symbol}]:`, error);
       return {

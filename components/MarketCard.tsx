@@ -14,12 +14,12 @@ interface MarketCardProps {
   onRefresh: (symbol: MarketSymbol) => void;
   onRefreshPrice?: (symbol: MarketSymbol) => void;
   onRemove: (id: string) => void;
+  onOpenSnapshot: () => void;
   isSortable?: boolean;
   showHint?: boolean;
 }
 
-const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis, onRefresh, onRefreshPrice, onRemove, isSortable, showHint }) => {
-  const [isSnapshotOpen, setIsSnapshotOpen] = useState(false);
+const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis, onRefresh, onRefreshPrice, onRemove, onOpenSnapshot, isSortable, showHint }) => {
   const isAnalyzing = analysis?.isAnalyzing;
 
   const {
@@ -218,7 +218,7 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
             {analysis.lastUpdated && (
               <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-100 dark:border-slate-800">
                  <button 
-                   onClick={() => setIsSnapshotOpen(true)}
+                   onClick={onOpenSnapshot}
                    className="flex items-center gap-1.5 text-[9px] font-bold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors bg-sky-500/10 dark:bg-sky-500/10 px-2.5 py-1.5 rounded-lg border border-sky-200 dark:border-sky-500/20"
                  >
                    <Fingerprint className="w-2.5 h-2.5" />
@@ -245,14 +245,6 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
           </div>
         )}
       </div>
-      {isSnapshotOpen && (
-        <SnapshotModal 
-          symbol={marketSymbol}
-          analysis={analysis}
-          onClose={() => setIsSnapshotOpen(false)}
-          onRefresh={() => onRefresh(marketSymbol)}
-        />
-      )}
     </div>
   );
 };
