@@ -38,9 +38,9 @@ declare global {
 const SCAN_COST = 0.10;
 
 const PROGRESS_STATUSES = [
-  "Searching News & Filings...",
+  "Scanning News & Filings...",
   "Fetching Financial Data...",
-  "Fetching Price Action...",
+  "Retrieving Price Action...",
   "Analyzing Technical Mood...",
   "Synthesizing Financial Pulse...",
   "Calculating Valuation Metrics...",
@@ -402,6 +402,9 @@ const App: React.FC = () => {
       setUser(prev => prev ? { ...prev, balance: newBalance } : null);
     }
 
+    // Rotate status messages every 2.5 seconds
+    let statusIndex = Math.floor(Math.random() * PROGRESS_STATUSES.length);
+    
     setState(prev => ({
       ...prev,
       analyses: {
@@ -409,13 +412,11 @@ const App: React.FC = () => {
         [symbol.id]: { 
           ...(prev.analyses[symbol.id] || {}), 
           isAnalyzing: true,
-          status: PROGRESS_STATUSES[0]
+          status: PROGRESS_STATUSES[statusIndex]
         } as PulserAnalysis
       }
     }));
 
-    // Rotate status messages every 2.5 seconds
-    let statusIndex = 0;
     const statusInterval = setInterval(() => {
       statusIndex = (statusIndex + 1) % PROGRESS_STATUSES.length;
       setState(prev => {
@@ -812,7 +813,7 @@ const App: React.FC = () => {
                         (state.marketSentiment?.fearGreed.value || 0) > 70 ? 'text-emerald-500' : 
                         (state.marketSentiment?.fearGreed.value || 0) < 30 ? 'text-rose-500' : 'text-amber-500'
                       }`}>
-                        {state.marketSentiment?.fearGreed.value || '--'} ({state.marketSentiment?.fearGreed.label || 'Syncing...'})
+                        {state.marketSentiment?.fearGreed.value || '--'} {state.marketSentiment?.fearGreed.label ? `(${state.marketSentiment.fearGreed.label})` : ''}
                       </span>
                     </div>
                     {hasIndiaStocks && state.marketSentiment?.nifty50 && (
