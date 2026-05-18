@@ -80,8 +80,17 @@ export interface UserProfile {
   balance: number;
 }
 
+export interface MarketSentiment {
+  fearGreed: { value: number; label: string };
+  buffettIndicator?: { value: string; status: string };
+  dowJones?: { value: string; change: string };
+  nifty50?: { value: string; change: string };
+  lastUpdated: string;
+}
+
 export interface AppState {
   symbols: MarketSymbol[];
   analyses: Record<string, PulserAnalysis>;
   generalNotes?: string;
+  marketSentiment?: MarketSentiment;
 }

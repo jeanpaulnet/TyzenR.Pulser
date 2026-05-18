@@ -101,12 +101,13 @@ const App: React.FC = () => {
           symbols: parsed.symbols || parsed.assets || INITIAL_SYMBOLS,
           analyses: parsed.analyses || {},
           generalNotes: parsed.generalNotes || '',
+          marketSentiment: parsed.marketSentiment || undefined,
         };
       } catch (e) {
         return { symbols: INITIAL_SYMBOLS, analyses: {} };
       }
     }
-    return { symbols: INITIAL_SYMBOLS, analyses: {}, generalNotes: '' };
+    return { symbols: INITIAL_SYMBOLS, analyses: {}, generalNotes: '', marketSentiment: undefined };
   });
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -121,6 +122,23 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('pulser_sidebar_collapsed', isSidebarCollapsed.toString());
   }, [isSidebarCollapsed]);
+
+  useEffect(() => {
+    const fetchSentiment = async () => {
+      try {
+        const sentiment = await pulser.getMarketSentiment();
+        if (sentiment) {
+          setState(prev => ({ ...prev, marketSentiment: sentiment }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch initial market sentiment:', error);
+      }
+    };
+    fetchSentiment();
+    // Refresh every 15 minutes
+    const interval = setInterval(fetchSentiment, 15 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const [userIp, setUserIp] = useState<string>('');
   const [selectedSymbolKey, setSelectedSymbolKey] = useState<{symbol: string, region: string} | null>(null);
@@ -730,24 +748,24 @@ const App: React.FC = () => {
           animate={{ 
             width: isSidebarCollapsed ? '64px' : '280px',
           }}
-          className={`relative border-r transition-colors flex flex-col z-30 ${
+          className={`relative border-r transition-shadow flex flex-col z-30 ${
             theme === 'dark' 
-              ? 'bg-slate-900 border-slate-800' 
-              : 'bg-white border-slate-200'
+              ? 'bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 border-slate-800' 
+              : 'bg-gradient-to-b from-slate-100 via-slate-200 to-slate-300 border-slate-300'
           }`}
         >
           {/* Sidebar Header */}
-          <div className="h-16 flex items-center justify-between px-4 border-b border-transparent">
+          <div className={`h-16 flex items-center justify-between px-4 border-b ${theme === 'dark' ? 'border-slate-800' : 'border-slate-200'}`}>
             {!isSidebarCollapsed && (
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="flex items-center gap-2"
               >
-                <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-500">
+                <div className={`p-1.5 rounded-lg ${theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
                   <Briefcase className="w-4 h-4" />
                 </div>
-                <span className="text-xs font-black uppercase tracking-widest text-slate-500">Advisor Board</span>
+                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Advisor Board</span>
               </motion.div>
             )}
             <button
@@ -770,20 +788,47 @@ const App: React.FC = () => {
                 <div className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                   <p className="text-[10px] uppercase font-black text-slate-500 mb-2">Market Sentiment</p>
                   <div className="space-y-2">
-                    {hasUSStocks && (
+                    {hasUSStocks && state.marketSentiment?.dowJones && (
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-400">Dow Jones</span>
-                        <span className="font-bold text-emerald-500">38,900 (+0.4%)</span>
+                        <span className={`font-bold ${state.marketSentiment.dowJones.change.includes('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          {state.marketSentiment.dowJones.value} ({state.marketSentiment.dowJones.change})
+                        </span>
+                      </div>
+                    )}
+                    {state.marketSentiment?.buffettIndicator && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">Buffett Indicator</span>
+                        <span className={`font-bold ${
+                          state.marketSentiment.buffettIndicator.status.toLowerCase().includes('overvalued') ? 'text-rose-500' : 'text-emerald-500'
+                        }`}>
+                          {state.marketSentiment.buffettIndicator.value}
+                        </span>
                       </div>
                     )}
                     <div className="flex items-center justify-between text-xs transition-opacity hover:opacity-80 cursor-pointer">
                       <span className="text-slate-400">Fear & Greed Index</span>
-                      <span className="font-bold text-emerald-500">72 (Greed)</span>
+                      <span className={`font-bold ${
+                        (state.marketSentiment?.fearGreed.value || 0) > 70 ? 'text-emerald-500' : 
+                        (state.marketSentiment?.fearGreed.value || 0) < 30 ? 'text-rose-500' : 'text-amber-500'
+                      }`}>
+                        {state.marketSentiment?.fearGreed.value || '--'} ({state.marketSentiment?.fearGreed.label || 'Syncing...'})
+                      </span>
                     </div>
-                    {hasIndiaStocks && (
+                    {hasIndiaStocks && state.marketSentiment?.nifty50 && (
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-400">NIFTY 50</span>
-                        <span className="font-bold text-rose-500">22,450 (-0.2%)</span>
+                        <span className={`font-bold ${state.marketSentiment.nifty50.change.includes('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
+                          {state.marketSentiment.nifty50.value} ({state.marketSentiment.nifty50.change})
+                        </span>
+                      </div>
+                    )}
+                    {!state.marketSentiment && (
+                      <div className="flex items-center justify-center py-2">
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500 italic">
+                          <Activity className="w-3 h-3 animate-pulse" />
+                          Indexing live pulse...
+                        </div>
                       </div>
                     )}
                   </div>

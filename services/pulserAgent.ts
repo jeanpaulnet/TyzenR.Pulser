@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { MarketSymbol, Sentiment, PulserAnalysis, MarketType } from "../types";
+import { MarketSymbol, Sentiment, PulserAnalysis, MarketType, MarketSentiment } from "../types";
 import { getFirebaseDb } from "./firebase";
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 
@@ -462,6 +462,54 @@ export class PulserAgent {
     } catch (error) {
       console.error('Price fetch error:', error);
       return { price: "0.00", currency: "USD", source: "Error" };
+    }
+  }
+
+  /**
+   * Fetches global market sentiment and key indices.
+   */
+  async getMarketSentiment(): Promise<MarketSentiment | null> {
+    try {
+      const apiKey = await this.getApiKey();
+      const ai = new GoogleGenAI({ apiKey });
+
+      const prompt = `Find the following real-time market sentiment data:
+      1. Fear & Greed Index (current value and label, e.g., 72, "Greed")
+      2. Warren Buffett Indicator (current percentage value of Market Cap to GDP and status, e.g., 185%, "Significantly Overvalued")
+      3. Dow Jones Industrial Average (current value and today's percentage change)
+      4. NIFTY 50 Index (current value and today's percentage change)
+
+      Use Google Search to find the most recent values from last few hours.
+      
+      Return ONLY a JSON object:
+      {
+        "fearGreed": {"value": number, "label": "string"},
+        "buffettIndicator": {"value": "string", "status": "string"},
+        "dowJones": {"value": "string", "change": "string (e.g. +0.4%)"},
+        "nifty50": {"value": "string", "change": "string (e.g. -0.2%)"}
+      }`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }]
+        }
+      });
+
+      const text = response.text || "";
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      const data = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+
+      if (!data) return null;
+
+      return {
+        ...data,
+        lastUpdated: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Market sentiment error:', error);
+      return null;
     }
   }
 }
