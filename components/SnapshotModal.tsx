@@ -670,7 +670,10 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                           <div key={idx} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl flex justify-between items-center group hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                             <div className="flex-1">
                               <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{peer.name}</p>
-                              <p className="text-[9px] text-slate-500 font-medium">{peer.marketCap}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] text-slate-500 font-medium">MCap: {peer.marketCap}</span>
+                                <span className="text-[9px] text-indigo-500 font-bold">CMP: {peer.cmp || '—'}</span>
+                              </div>
                             </div>
                             <div className="flex gap-4 text-right">
                               <div>
