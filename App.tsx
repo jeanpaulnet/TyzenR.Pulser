@@ -6,7 +6,7 @@ import { pulser } from './services/pulserAgent';
 import MarketCard from './components/MarketCard';
 import AddSymbolModal from './components/AddAssetModal';
 import SnapshotModal from './components/SnapshotModal';
-import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon, LogOut, Mail, Send, CheckCircle2, GripHorizontal, ChevronDown } from 'lucide-react';
+import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon, LogOut, Mail, Send, CheckCircle2, GripHorizontal, ChevronDown, ChevronsLeft, ChevronsRight, MessageSquare, Briefcase } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -113,6 +113,15 @@ const App: React.FC = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [editingSymbolId, setEditingSymbolId] = useState<string | null>(null);
   const [isGeneralNotesOpen, setIsGeneralNotesOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('pulser_sidebar_collapsed');
+    return saved === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('pulser_sidebar_collapsed', isSidebarCollapsed.toString());
+  }, [isSidebarCollapsed]);
+
   const [userIp, setUserIp] = useState<string>('');
   const [selectedSymbolKey, setSelectedSymbolKey] = useState<{symbol: string, region: string} | null>(null);
 
@@ -710,8 +719,122 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Layout Wrapper */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Advisor Board Sidebar */}
+        <motion.aside
+          initial={false}
+          animate={{ 
+            width: isSidebarCollapsed ? '64px' : '280px',
+          }}
+          className={`relative border-r transition-colors flex flex-col z-30 ${
+            theme === 'dark' 
+              ? 'bg-slate-900 border-slate-800' 
+              : 'bg-white border-slate-200'
+          }`}
+        >
+          {/* Sidebar Header */}
+          <div className="h-16 flex items-center justify-between px-4 border-b border-transparent">
+            {!isSidebarCollapsed && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center gap-2"
+              >
+                <div className="p-1.5 bg-indigo-500/10 rounded-lg text-indigo-500">
+                  <Briefcase className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-black uppercase tracking-widest text-slate-500">Advisor Board</span>
+              </motion.div>
+            )}
+            <button
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className={`p-2 rounded-xl transition-all hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-500 ${isSidebarCollapsed ? 'mx-auto' : ''}`}
+              title={isSidebarCollapsed ? "Expand Board" : "Collapse Board"}
+            >
+              {isSidebarCollapsed ? <ChevronsRight className="w-4 h-4" /> : <ChevronsLeft className="w-4 h-4" />}
+            </button>
+          </div>
+
+          {/* Sidebar Content */}
+          <div className="flex-1 overflow-y-auto no-scrollbar p-3 space-y-4">
+            {!isSidebarCollapsed ? (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                <div className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                  <p className="text-[10px] uppercase font-black text-slate-500 mb-2">Market Sentiment</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs transition-opacity hover:opacity-80 cursor-pointer">
+                      <span className="text-slate-400">Fear & Greed Index</span>
+                      <span className="font-bold text-emerald-500">72 (Greed)</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-400">Retail Flow</span>
+                      <span className="font-bold text-indigo-500">+12%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                   <p className="text-[10px] uppercase font-black text-slate-500 mb-2">Alpha Signals</p>
+                   <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <div className="w-1 h-8 bg-emerald-500 rounded-full" />
+                        <div>
+                          <p className="text-[11px] font-bold">Tech Rebound</p>
+                          <p className="text-[9px] text-slate-500">Institutional accumulation detected</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="w-1 h-8 bg-amber-500 rounded-full" />
+                        <div>
+                          <p className="text-[11px] font-bold">Macro Shift</p>
+                          <p className="text-[9px] text-slate-500">CPI guidance pending market move</p>
+                        </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <p className="text-[10px] uppercase font-black text-slate-500 mb-4 px-2 tracking-widest">Active Advisors</p>
+                  <div className="space-y-2">
+                    {[
+                      { name: 'Dr. Quant', role: 'Arbitrage Expert', color: 'bg-emerald-500' },
+                      { name: 'Macro Mike', role: 'Global Strategy', color: 'bg-blue-500' },
+                      { name: 'Alt Al', role: 'Crypto Trends', color: 'bg-purple-500' }
+                    ].map((advisor, i) => (
+                      <div key={i} className={`p-2 rounded-xl flex items-center gap-3 transition-colors cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-xs ${advisor.color}`}>
+                          {advisor.name[0]}
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-bold">{advisor.name}</p>
+                          <p className="text-[9px] text-slate-500">{advisor.role}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="flex flex-col items-center gap-6 py-4">
+                <Briefcase className="w-5 h-5 text-slate-400" />
+                <TrendingUp className="w-5 h-5 text-slate-400" />
+                <MessageSquare className="w-5 h-5 text-slate-400" />
+                <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-black text-xs">D</div>
+                <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white font-black text-xs">M</div>
+                <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center text-white font-black text-xs">A</div>
+              </div>
+            )}
+          </div>
+        </motion.aside>
+
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-y-auto no-scrollbar">
+          <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Primary Controls: Add Symbol, Filters, Search */}
         <div className="flex flex-col gap-6 lg:gap-4 md:flex-row md:items-center md:justify-between">
           {/* Add Symbol - Row 1 on Mobile, Item 1 on Desktop */}
@@ -829,7 +952,9 @@ const App: React.FC = () => {
             </button>
           </div>
         )}
-      </main>
+          </div>
+        </main>
+      </div>
 
       {/* Footer */}
       <footer className={`border-t py-12 px-4 mt-auto transition-colors ${theme === 'dark' ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200'}`}>
