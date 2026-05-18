@@ -334,12 +334,19 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
               </h2>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-3 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-2xl transition-all text-slate-400 hover:text-slate-600 dark:hover:text-white"
-          >
-            <X className="w-6 h-6" />
-          </button>
+          <div className="flex items-center gap-6">
+            <div className="hidden sm:flex items-center px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm">
+              <span className="text-sm font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent tracking-[0.3em]">
+                PULSER AI
+              </span>
+            </div>
+            <button 
+              onClick={onClose}
+              className="p-3 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-2xl transition-all text-slate-400 hover:text-slate-600 dark:hover:text-white"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
 
         {/* Content Scrollable Area */}
