@@ -237,6 +237,8 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
     return 'bg-slate-100 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800/40';
   };
 
+  const isPulserDomain = typeof window !== 'undefined' && window.location.hostname === 'pulser.tyzenr.com';
+
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 pointer-events-auto">
       <div 
@@ -699,9 +701,16 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
 
         {/* Footer */}
         <div className="px-8 py-5 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
-           <p className="text-[10px] text-slate-400 dark:text-slate-600 font-medium">
-             Analyzed using Pulser AI Global Search grounding • Synced: {analysis?.lastUpdated ? new Date(analysis.lastUpdated).toLocaleString() : 'Just now'}
-           </p>
+           <div className="flex flex-col gap-0.5">
+             <p className="text-[10px] text-slate-400 dark:text-slate-600 font-medium">
+               Analyzed using Pulser AI Global Search grounding • Synced: {analysis?.lastUpdated ? new Date(analysis.lastUpdated).toLocaleString() : 'Just now'}
+             </p>
+             {isPulserDomain && (
+               <p className="text-[9px] font-black tracking-widest text-indigo-500 uppercase">
+                 Pulser AI @ pulser.tyzenr.com
+               </p>
+             )}
+           </div>
            <div className="flex gap-4">
               <button 
                 onClick={handleShare}
