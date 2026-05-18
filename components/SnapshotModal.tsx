@@ -448,6 +448,29 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                   </div>
                 </div>
               </div>
+
+              {/* About Section */}
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-slate-500/10 rounded-xl text-slate-500">
+                    <Info className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-bold text-slate-800 dark:text-slate-200 capitalize">About</h3>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  {snapshot?.about || `${symbol.name} is an asset being tracked for pulse sentiment. Background data pending update.`}
+                </p>
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2">
+                   <div>
+                      <p className="text-[9px] uppercase font-black text-slate-400">Founded</p>
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{snapshot?.founded || '—'}</p>
+                   </div>
+                   <div>
+                      <p className="text-[9px] uppercase font-black text-slate-400">Employees</p>
+                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{snapshot?.employees || '—'}</p>
+                   </div>
+                </div>
+              </div>
             </div>
 
             {/* Column 2 */}
@@ -539,29 +562,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                 </div>
               </div>
 
-              {/* About Section */}
-              <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-slate-500/10 rounded-xl text-slate-500">
-                    <Info className="w-4 h-4" />
-                  </div>
-                  <h3 className="font-bold text-slate-800 dark:text-slate-200 capitalize">About</h3>
-                </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  {snapshot?.about || `${symbol.name} is an asset being tracked for pulse sentiment. Background data pending update.`}
-                </p>
-                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2">
-                   <div>
-                      <p className="text-[9px] uppercase font-black text-slate-400">Founded</p>
-                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{snapshot?.founded || '—'}</p>
-                   </div>
-                   <div>
-                      <p className="text-[9px] uppercase font-black text-slate-400">Employees</p>
-                      <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{snapshot?.employees || '—'}</p>
-                   </div>
-                </div>
               </div>
-            </div>
 
             {/* Column 3 */}
             <div className="space-y-6">
