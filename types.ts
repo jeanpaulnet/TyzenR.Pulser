@@ -83,4 +83,5 @@ export interface UserProfile {
 export interface AppState {
   symbols: MarketSymbol[];
   analyses: Record<string, PulserAnalysis>;
+  generalNotes?: string;
 }

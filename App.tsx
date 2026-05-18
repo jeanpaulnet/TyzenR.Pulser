@@ -100,16 +100,19 @@ const App: React.FC = () => {
         return {
           symbols: parsed.symbols || parsed.assets || INITIAL_SYMBOLS,
           analyses: parsed.analyses || {},
+          generalNotes: parsed.generalNotes || '',
         };
       } catch (e) {
         return { symbols: INITIAL_SYMBOLS, analyses: {} };
       }
     }
-    return { symbols: INITIAL_SYMBOLS, analyses: {} };
+    return { symbols: INITIAL_SYMBOLS, analyses: {}, generalNotes: '' };
   });
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [editingSymbolId, setEditingSymbolId] = useState<string | null>(null);
+  const [isGeneralNotesOpen, setIsGeneralNotesOpen] = useState(false);
   const [userIp, setUserIp] = useState<string>('');
   const [selectedSymbolKey, setSelectedSymbolKey] = useState<{symbol: string, region: string} | null>(null);
 
@@ -128,6 +131,8 @@ const App: React.FC = () => {
       if (e.key === 'Escape') {
         setIsAddModalOpen(false);
         setIsLoginModalOpen(false);
+        setEditingSymbolId(null);
+        setIsGeneralNotesOpen(false);
         setIsSupportModalOpen(false);
         setIsUserMenuOpen(false);
       }
@@ -508,6 +513,20 @@ const App: React.FC = () => {
     window.history.replaceState({}, '', newUrl);
   }, [selectedSymbolKey]);
 
+  const handleUpdateSymbolNotes = (id: string, notes: string) => {
+    setState(prev => ({
+      ...prev,
+      symbols: prev.symbols.map(s => s.id === id ? { ...s, notes } : s)
+    }));
+  };
+
+  const handleUpdateGeneralNotes = (notes: string) => {
+    setState(prev => ({
+      ...prev,
+      generalNotes: notes
+    }));
+  };
+
   const filteredSymbols = state.symbols.filter(symbol => {
     const matchesSearch = symbol.symbol.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          symbol.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -591,7 +610,10 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
-            <div className={`hidden lg:flex items-center gap-2 px-3 py-1.5 border rounded-full transition-colors ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white/10 border-white/20'}`}>
+            <div 
+              onClick={() => setIsGeneralNotesOpen(true)}
+              className={`hidden lg:flex items-center gap-2 px-3 py-1.5 border rounded-full transition-colors cursor-pointer hover:brightness-110 active:scale-95 ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white/10 border-white/20'}`}
+            >
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               <span className={`text-xs font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-white'}`}>AI Engine ON</span>
             </div>
@@ -758,6 +780,7 @@ const App: React.FC = () => {
                   onRefreshPrice={handleRefreshPrice}
                   onRemove={handleRemoveSymbol}
                   onOpenSnapshot={() => setSelectedSymbolKey({ symbol: symbol.symbol, region: symbol.region })}
+                  onEditNotes={() => setEditingSymbolId(symbol.id)}
                   showHint={index === 0 && Object.keys(state.analyses).length === 0 && searchQuery === ''}
                 />
               ))}
@@ -782,6 +805,7 @@ const App: React.FC = () => {
                       onRefreshPrice={handleRefreshPrice}
                       onRemove={handleRemoveSymbol}
                       onOpenSnapshot={() => setSelectedSymbolKey({ symbol: symbol.symbol, region: symbol.region })}
+                      onEditNotes={() => setEditingSymbolId(symbol.id)}
                       isSortable={true}
                       showHint={index === 0 && Object.keys(state.analyses).length === 0}
                     />
@@ -853,6 +877,87 @@ const App: React.FC = () => {
           existingSymbols={state.symbols}
         />
       )}
+
+      {/* Note Edit Modal */}
+      <AnimatePresence>
+        {(editingSymbolId || isGeneralNotesOpen) && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className={`border rounded-[2.5rem] p-8 max-w-lg w-full shadow-2xl relative transition-colors ${theme === 'dark' ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}
+            >
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-xl ${theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
+                      <Info className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                        {isGeneralNotesOpen ? 'General Pulse Notes' : 'Edit Symbol Notes'}
+                      </h2>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-500">
+                        {isGeneralNotesOpen ? 'Global Application View' : `${state.symbols.find(s => s.id === editingSymbolId)?.symbol} - Internal Strategy`}
+                      </p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => { setEditingSymbolId(null); setIsGeneralNotesOpen(false); }}
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-slate-400"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="relative">
+                    <textarea 
+                      autoFocus
+                      placeholder="Write your thesis, notes, or observations here..."
+                      value={isGeneralNotesOpen ? (state.generalNotes || '') : (state.symbols.find(s => s.id === editingSymbolId)?.notes || '')}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const limit = isGeneralNotesOpen ? 10000 : 2000;
+                        if (val.length <= limit) {
+                          if (isGeneralNotesOpen) {
+                            handleUpdateGeneralNotes(val);
+                          } else if (editingSymbolId) {
+                            handleUpdateSymbolNotes(editingSymbolId, val);
+                          }
+                        }
+                      }}
+                      className={`w-full h-64 p-5 rounded-2xl border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all leading-relaxed ${theme === 'dark' ? 'bg-slate-950 border-slate-800 text-slate-200 placeholder:text-slate-700' : 'bg-slate-50 border-slate-200 text-slate-800 placeholder:text-slate-400'}`}
+                    />
+                    <div className="absolute bottom-4 right-4 flex items-center gap-2">
+                      <span className={`text-[10px] font-black tracking-widest ${
+                        (isGeneralNotesOpen ? (state.generalNotes?.length || 0) : (state.symbols.find(s => s.id === editingSymbolId)?.notes?.length || 0)) > (isGeneralNotesOpen ? 9000 : 1800)
+                        ? 'text-rose-500' : 'text-slate-400'
+                      }`}>
+                        {(isGeneralNotesOpen ? (state.generalNotes?.length || 0) : (state.symbols.find(s => s.id === editingSymbolId)?.notes?.length || 0)).toLocaleString()} / {(isGeneralNotesOpen ? 10000 : 2000).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => { setEditingSymbolId(null); setIsGeneralNotesOpen(false); }}
+                    className={`flex-1 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl active:scale-95 ${
+                      theme === 'dark' 
+                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-900/40' 
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/20'
+                    }`}
+                  >
+                    Save Notes
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {selectedSymbolKey && (() => {
         const existingSymbol = state.symbols.find(s => s.symbol === selectedSymbolKey.symbol && s.region === selectedSymbolKey.region) || 

@@ -15,11 +15,12 @@ interface MarketCardProps {
   onRefreshPrice?: (symbol: MarketSymbol) => void;
   onRemove: (id: string) => void;
   onOpenSnapshot: () => void;
+  onEditNotes?: () => void;
   isSortable?: boolean;
   showHint?: boolean;
 }
 
-const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis, onRefresh, onRefreshPrice, onRemove, onOpenSnapshot, isSortable, showHint }) => {
+const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis, onRefresh, onRefreshPrice, onRemove, onOpenSnapshot, onEditNotes, isSortable, showHint }) => {
   const isAnalyzing = analysis?.isAnalyzing;
 
   const {
@@ -122,7 +123,15 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
                 </div>
               )}
             </div>
-            <p className="text-xs text-purple-100 dark:text-slate-500 truncate max-w-[140px] font-medium">{marketSymbol.name}</p>
+            <p 
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditNotes?.();
+              }}
+              className="text-xs text-purple-100 dark:text-slate-500 truncate max-w-[140px] font-medium cursor-pointer hover:text-white dark:hover:text-emerald-400 transition-colors"
+            >
+              {marketSymbol.name}
+            </p>
           </div>
           
           <div className="flex items-center gap-1 relative">

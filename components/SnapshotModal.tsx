@@ -714,7 +714,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
              </p>
              {isPulserDomain && (
                <p className="text-[9px] font-black tracking-widest text-indigo-500 uppercase">
-                 Pulser AI @ pulser.tyzenr.com
+                 pulser.tyzenr.com
                </p>
              )}
            </div>
