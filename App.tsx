@@ -125,6 +125,9 @@ const App: React.FC = () => {
   const [userIp, setUserIp] = useState<string>('');
   const [selectedSymbolKey, setSelectedSymbolKey] = useState<{symbol: string, region: string} | null>(null);
 
+  const hasUSStocks = state.symbols.some(s => s.region === 'US');
+  const hasIndiaStocks = state.symbols.some(s => s.region === 'INDIA');
+
   // Sync with URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -767,14 +770,22 @@ const App: React.FC = () => {
                 <div className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                   <p className="text-[10px] uppercase font-black text-slate-500 mb-2">Market Sentiment</p>
                   <div className="space-y-2">
+                    {hasUSStocks && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">Dow Jones</span>
+                        <span className="font-bold text-emerald-500">38,900 (+0.4%)</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between text-xs transition-opacity hover:opacity-80 cursor-pointer">
                       <span className="text-slate-400">Fear & Greed Index</span>
                       <span className="font-bold text-emerald-500">72 (Greed)</span>
                     </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-400">Retail Flow</span>
-                      <span className="font-bold text-indigo-500">+12%</span>
-                    </div>
+                    {hasIndiaStocks && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">NIFTY 50</span>
+                        <span className="font-bold text-rose-500">22,450 (-0.2%)</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
