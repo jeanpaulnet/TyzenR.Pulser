@@ -134,8 +134,8 @@ export class PulserAgent {
             const lastUpdated = cachedData.lastUpdated as Timestamp;
             const now = Timestamp.now();
             
-            // Check if less than 24 hours old (24 * 60 * 60 seconds)
-            if (now.seconds - lastUpdated.seconds < 86400) {
+            // Check if less than 4 hours old (4 * 60 * 60 seconds)
+            if (now.seconds - lastUpdated.seconds < 14400) {
               console.log(`Using cached analysis for ${symbol.symbol}`);
               return {
                 ...cachedData.analysis,
@@ -167,7 +167,9 @@ export class PulserAgent {
       
       ${priceSourceHint}
       
-      CRITICAL INSTRUCTION: You MUST use the Google Search tool to find "LIVE" news from the last 24-48 hours. 
+      CRITICAL INSTRUCTION: You MUST use the Google Search tool for EVERYTHING. 
+      Specifically for the "peers" section: Conduct a direct search for the REAL-TIME Market Cap, PE Ratio, PB Ratio, and CMP (Current Market Price) for at least 3-4 direct competitors. Do NOT use training data or placeholders. Citation of recent market data is required.
+      
       Analyze: Recent price action catalysts, earnings reports, regulatory news, and analyst sentiment.
       
       CRITICAL: For "growthData", you MUST find and include the Revenue and Profit (Net Income) for the PAST 5 CONSECUTIVE YEARS. This is the top priority for the "Growth Chart". If exact revenue/profit isn't found in one search, look for annual reports or investor presentations.
@@ -212,7 +214,7 @@ export class PulserAgent {
           "founded": "Year",
           "employees": "Count",
           "peers": [{"name": "Peer", "pe": "PE Ratio", "marketCap": "Market Cap", "pb": "PB Ratio", "cmp": "Current Price"}],
-          "peerComparison": "Detailed paragraph comparing the company's valuation (PE/PB) and performance against these specific peers. Ensure CMP and Market Cap use real, current values.",
+          "peerComparison": "Detailed paragraph comparing the company's valuation (PE/PB) and performance against these specific peers. Ensure CMP and Market Cap use real, current values. CRITICAL: For 'peers', you MUST conduct a specific search for the current real-time stock price (CMP), PE Ratio, Market Cap, and PB Ratio for each peer listed. Do NOT use placeholder values; the data MUST reflect the absolute latest available metrics from today's market session.",
           "analystViews": [{"firm": "Morningstar/Goldman", "rating": "Buy/Outperform", "targetPrice": "Price", "date": "Date"}],
           "expansionPlans": [{"plan": "Strategic point", "date": "Estimated timeline, e.g., Q4 2024"}],
           "growthData": [{"year": "2023", "revenue": 100.5, "profit": 15.2, "growth": 10.5}],
@@ -359,6 +361,16 @@ export class PulserAgent {
         })).filter((p: any) => !isNaN(p.price) && p.price > 0);
       });
 
+      // Sanitize Peers (ensure consistent formatting and real-time feel)
+      const rawPeers = data.snapshot?.peers || [];
+      const sanitizedPeers = rawPeers.map((p: any) => ({
+        name: String(p.name || ''),
+        pe: this.sanitizePrice(p.pe || '—'),
+        marketCap: this.sanitizePrice(p.marketCap || '—'),
+        pb: this.sanitizePrice(p.pb || '—'),
+        cmp: this.sanitizePrice(p.cmp || '—')
+      }));
+
       const analysisResult: PulserAnalysis = {
         symbolId: symbol.id,
         shortTermTrend: (data.shortTermTrend || Sentiment.NEUTRAL) as Sentiment,
@@ -385,6 +397,7 @@ export class PulserAgent {
             targetPrice: this.sanitizePrice(v.targetPrice || "")
           })),
           marketCap: this.sanitizePrice(data.snapshot?.marketCap || data.marketCap || '—'),
+          peers: sanitizedPeers,
           growthData: sanitizedGrowth,
           historicalData: sanitizedHistorical,
           news: sanitizedNews.slice(0, 3)
