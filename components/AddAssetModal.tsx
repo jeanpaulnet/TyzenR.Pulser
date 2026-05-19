@@ -18,6 +18,7 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [isFromSuggestion, setIsFromSuggestion] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<{ symbol: string; name: string; type: MarketType }[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
@@ -31,13 +32,16 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
           const results = await pulser.searchSuggestions(symbol, region);
           setSearchSuggestions(results);
           
-          // If we have an exact match or a first result, update company name placeholder
-          if (results.length > 0) {
-            const exactMatch = results.find(r => r.symbol.toUpperCase() === symbol.toUpperCase());
-            if (exactMatch) {
-              setCompanyName(exactMatch.name);
-              setType(exactMatch.type);
-            }
+          // If we have an exact match, auto-fill company details and mark as "from suggestion"
+          const exactMatch = results.find(r => r.symbol.toUpperCase() === symbol.trim().toUpperCase());
+          if (exactMatch) {
+            setCompanyName(exactMatch.name);
+            setType(exactMatch.type);
+            setIsFromSuggestion(true);
+          } else if (results.length > 0 && !isFromSuggestion) {
+            // Even if not exact, show top result as a "potential" name to help user
+            setCompanyName(results[0].name);
+            setType(results[0].type);
           }
         } catch (err) {
           console.error('Failed to fetch suggestions:', err);
@@ -46,11 +50,15 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
         }
       } else {
         setSearchSuggestions([]);
+        if (!isFromSuggestion) {
+          setCompanyName('');
+          setError(null);
+        }
       }
-    }, 500);
+    }, 400);
 
     return () => clearTimeout(timer);
-  }, [symbol, region]);
+  }, [symbol, region, isFromSuggestion]);
 
   useEffect(() => {
     // Focus the input when the modal opens
@@ -96,6 +104,20 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
     setIsValidating(true);
     setError(null);
     setSuggestion(null);
+
+    // If it's from suggestion, save immediately without validation
+    if (isFromSuggestion) {
+      onAdd({
+        id: Date.now().toString(),
+        symbol: trimmedSymbol,
+        name: companyName || trimmedSymbol,
+        type,
+        region,
+        notes: notes.trim() || undefined
+      });
+      onClose();
+      return;
+    }
 
     try {
       const validation = await pulser.validateSymbol(trimmedSymbol, type, region);
@@ -147,7 +169,11 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
                   required
                   placeholder={region === 'INDIA' ? 'e.g. RELIANCE.NS' : 'e.g. AAPL, BTC'}
                   value={symbol}
-                  onChange={(e) => setSymbol(e.target.value)}
+                  onChange={(e) => {
+                    setSymbol(e.target.value);
+                    setIsFromSuggestion(false);
+                    setError(null);
+                  }}
                   autoComplete="off"
                   className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600"
                 />
@@ -170,6 +196,8 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
                         setCompanyName(suggestion.name);
                         setType(suggestion.type);
                         setSearchSuggestions([]);
+                        setIsFromSuggestion(true);
+                        setError(null);
                       }}
                       className="w-full px-4 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors"
                     >
@@ -185,11 +213,14 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
 
               {/* Company Name Label */}
               {companyName && (
-                <div className="mt-1.5 flex items-center gap-2 px-3 py-1 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-lg">
-                  <div className="p-1 bg-blue-500/20 rounded-md">
-                    <LineChart className="w-2.5 h-2.5 text-blue-500" />
+                <div className="mt-2.5 px-3 py-2 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-xl transition-all animate-in fade-in slide-in-from-top-1">
+                  <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-0.5">Matched Entity</p>
+                  <div className="flex items-center gap-2">
+                    <div className="p-1 bg-indigo-500 rounded-lg shadow-sm">
+                      <LineChart className="w-2.5 h-2.5 text-white" />
+                    </div>
+                    <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 truncate">{companyName}</span>
                   </div>
-                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 truncate tracking-tight">{companyName}</span>
                 </div>
               )}
 
@@ -297,14 +328,16 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
             <button
               type="submit"
               disabled={isValidating}
-              className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-blue-600 font-semibold hover:bg-blue-500 shadow-lg shadow-blue-600/20 text-white disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className={`flex-1 px-3 py-1.5 text-xs rounded-lg font-semibold shadow-lg transition-all text-white disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                isFromSuggestion ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20' : 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/20'
+              }`}
             >
               {isValidating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" /> Verifying...
                 </>
               ) : (
-                'Add Symbol'
+                isFromSuggestion ? 'Add Symbol' : 'Verify & Add'
               )}
             </button>
           </div>

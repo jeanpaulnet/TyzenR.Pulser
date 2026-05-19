@@ -48,7 +48,7 @@ export class PulserAgent {
       CRITICAL: Use exact tickers (e.g., AAPL, MSFT, RELIANCE.NS, BTC). Use the .NS suffix for Indian NSE stocks.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash", // Use faster model for suggestions
+        model: "gemini-3-flash-preview", // Use faster model for suggestions
         contents: prompt
       });
 

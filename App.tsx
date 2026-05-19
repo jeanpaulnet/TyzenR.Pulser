@@ -123,6 +123,18 @@ const App: React.FC = () => {
     localStorage.setItem('pulser_sidebar_collapsed', isSidebarCollapsed.toString());
   }, [isSidebarCollapsed]);
 
+  // Handle mobile sidebar auto-collapse
+  useEffect(() => {
+    const checkMobile = () => {
+      if (window.innerWidth < 768) {
+        setIsSidebarCollapsed(true);
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   useEffect(() => {
     const fetchSentiment = async () => {
       try {
@@ -760,7 +772,7 @@ const App: React.FC = () => {
 
       {/* Layout Wrapper */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Advisor Board Sidebar */}
+        {/* Dashboard Sidebar */}
         <motion.aside
           initial={false}
           animate={{ 
@@ -783,7 +795,7 @@ const App: React.FC = () => {
                 <div className={`p-1.5 rounded-lg ${theme === 'dark' ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
                   <Briefcase className="w-4 h-4" />
                 </div>
-                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Advisor Board</span>
+                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Dashboard</span>
               </motion.div>
             )}
             <button
