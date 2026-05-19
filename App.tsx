@@ -140,6 +140,23 @@ const App: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        const trending = await pulser.getTrendingStocks();
+        if (trending && trending.length > 0) {
+          setState(prev => ({ ...prev, trendingStocks: trending }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch trending stocks:', error);
+      }
+    };
+    fetchTrending();
+    // Refresh every hour
+    const interval = setInterval(fetchTrending, 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   const [userIp, setUserIp] = useState<string>('');
   const [selectedSymbolKey, setSelectedSymbolKey] = useState<{symbol: string, region: string} | null>(null);
 
@@ -749,10 +766,10 @@ const App: React.FC = () => {
           animate={{ 
             width: isSidebarCollapsed ? '64px' : '280px',
           }}
-          className={`relative border-r transition-shadow flex flex-col z-30 ${
+          className={`relative border-r transition-all flex flex-col z-30 ${
             theme === 'dark' 
-              ? 'bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 border-slate-800' 
-              : 'bg-gradient-to-b from-slate-100 via-slate-200 to-slate-300 border-slate-300'
+              ? 'bg-slate-900/50 border-slate-800' 
+              : 'bg-slate-50 border-slate-200'
           }`}
         >
           {/* Sidebar Header */}
@@ -786,14 +803,14 @@ const App: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-4"
               >
-                <div className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                <div className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
                   <p className="text-[10px] uppercase font-black text-slate-500 mb-2">Market Sentiment</p>
                   <div className="space-y-2">
                     {hasUSStocks && state.marketSentiment?.dowJones && (
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-400">Dow Jones</span>
                         <span className={`font-bold ${state.marketSentiment.dowJones.change.includes('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
-                          {state.marketSentiment.dowJones.value} ({state.marketSentiment.dowJones.change})
+                          {state.marketSentiment.dowJones.value}
                         </span>
                       </div>
                     )}
@@ -820,7 +837,7 @@ const App: React.FC = () => {
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-400">NIFTY 50</span>
                         <span className={`font-bold ${state.marketSentiment.nifty50.change.includes('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
-                          {state.marketSentiment.nifty50.value} ({state.marketSentiment.nifty50.change})
+                          {state.marketSentiment.nifty50.value}
                         </span>
                       </div>
                     )}
@@ -835,27 +852,53 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                {state.trendingStocks && state.trendingStocks.length > 0 && (
+                  <div className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+                    <p className="text-[10px] uppercase font-black text-slate-500 mb-2 flex items-center justify-between">
+                      Trending Stocks
+                      <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    </p>
+                    <div className="space-y-2">
+                      {state.trendingStocks.slice(0, 5).map((stock, i) => (
+                        <div key={i} className="flex items-center justify-between group cursor-pointer" onClick={() => {
+                          const region = stock.symbol.includes('.NS') ? 'INDIA' : 'US';
+                          setSelectedSymbolKey({ symbol: stock.symbol, region });
+                        }}>
+                          <div className="flex flex-col">
+                            <span className={`text-[11px] font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'} group-hover:text-indigo-500 transition-colors`}>{stock.symbol}</span>
+                            <span className="text-[9px] text-slate-500 truncate max-w-[100px]">{stock.name}</span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] font-black">{stock.price}</p>
+                            <p className={`text-[9px] font-bold ${stock.change.includes('+') ? 'text-emerald-500' : 'text-rose-500'}`}>{stock.change}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
                    <p className="text-[10px] uppercase font-black text-slate-500 mb-2">Alpha Signals</p>
                    <div className="space-y-3">
                       <div className="flex gap-2">
                         <div className="w-1 h-8 bg-emerald-500 rounded-full" />
                         <div>
-                          <p className="text-[11px] font-bold">Tech Rebound</p>
+                          <p className={`text-[11px] font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>Tech Rebound</p>
                           <p className="text-[9px] text-slate-500">Institutional accumulation detected</p>
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <div className="w-1 h-8 bg-amber-500 rounded-full" />
                         <div>
-                          <p className="text-[11px] font-bold">Macro Shift</p>
+                          <p className={`text-[11px] font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>Macro Shift</p>
                           <p className="text-[9px] text-slate-500">CPI guidance pending market move</p>
                         </div>
                       </div>
                    </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className={`pt-4 border-t ${theme === 'dark' ? 'border-slate-800' : 'border-slate-200'}`}>
                   <p className="text-[10px] uppercase font-black text-slate-500 mb-4 px-2 tracking-widest">Active Advisors</p>
                   <div className="space-y-2">
                     {[
@@ -863,13 +906,13 @@ const App: React.FC = () => {
                       { name: 'Macro Mike', role: 'Global Strategy', color: 'bg-blue-500' },
                       { name: 'Alt Al', role: 'Crypto Trends', color: 'bg-purple-500' }
                     ].map((advisor, i) => (
-                      <div key={i} className={`p-2 rounded-xl flex items-center gap-3 transition-colors cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800`}>
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-xs ${advisor.color}`}>
+                      <div key={i} className={`p-2 rounded-xl flex items-center gap-3 transition-colors cursor-pointer ${theme === 'dark' ? 'hover:bg-slate-800' : 'hover:bg-slate-100'} group`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-xs ${advisor.color} shadow-lg transition-transform group-hover:scale-105`}>
                           {advisor.name[0]}
                         </div>
                         <div>
-                          <p className="text-[11px] font-bold">{advisor.name}</p>
-                          <p className="text-[9px] text-slate-500">{advisor.role}</p>
+                          <p className={`text-[11px] font-bold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>{advisor.name}</p>
+                          <p className="text-[9px] text-slate-500 transition-colors group-hover:text-indigo-500">{advisor.role}</p>
                         </div>
                       </div>
                     ))}
@@ -878,12 +921,12 @@ const App: React.FC = () => {
               </motion.div>
             ) : (
               <div className="flex flex-col items-center gap-6 py-4">
-                <Briefcase className="w-5 h-5 text-slate-400" />
-                <TrendingUp className="w-5 h-5 text-slate-400" />
-                <MessageSquare className="w-5 h-5 text-slate-400" />
-                <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-black text-xs">D</div>
-                <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white font-black text-xs">M</div>
-                <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center text-white font-black text-xs">A</div>
+                <Briefcase className={`w-5 h-5 ${theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                <TrendingUp className={`w-5 h-5 ${theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                <MessageSquare className={`w-5 h-5 ${theme === 'dark' ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-black text-xs shadow-lg">D</div>
+                <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white font-black text-xs shadow-lg">M</div>
+                <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center text-white font-black text-xs shadow-lg">A</div>
               </div>
             )}
           </div>

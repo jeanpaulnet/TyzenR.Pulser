@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { MarketSymbol, Sentiment, PulserAnalysis, MarketType, MarketSentiment } from "../types";
+import { MarketSymbol, Sentiment, PulserAnalysis, MarketType, MarketSentiment, TrendingStock } from "../types";
 import { getFirebaseDb } from "./firebase";
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 
@@ -523,6 +523,41 @@ export class PulserAgent {
     } catch (error) {
       console.error('Market sentiment error:', error);
       return null;
+    }
+  }
+
+  /**
+   * Fetches the top 5 trending stocks globally and in India.
+   */
+  async getTrendingStocks(): Promise<TrendingStock[]> {
+    try {
+      const apiKey = await this.getApiKey();
+      const ai = new GoogleGenAI({ apiKey });
+
+      const prompt = `Search for the TOP 5 most trending stocks right now (Globally and in India).
+      Consider volume, social media buzz, and recent news.
+      
+      Return ONLY a JSON array of 5 objects:
+      [
+        {"symbol": "TICKER", "name": "Name", "price": "Current Price", "change": "Today Percentage Change"}
+      ]`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }]
+        }
+      });
+
+      const text = response.text || "";
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      const data = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+      
+      return data;
+    } catch (error) {
+      console.error('Trending stocks error:', error);
+      return [];
     }
   }
 }

@@ -88,9 +88,17 @@ export interface MarketSentiment {
   lastUpdated: string;
 }
 
+export interface TrendingStock {
+  symbol: string;
+  name: string;
+  price: string;
+  change: string;
+}
+
 export interface AppState {
   symbols: MarketSymbol[];
   analyses: Record<string, PulserAnalysis>;
   generalNotes?: string;
   marketSentiment?: MarketSentiment;
+  trendingStocks?: TrendingStock[];
 }
