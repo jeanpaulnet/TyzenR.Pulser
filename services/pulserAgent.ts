@@ -1,5 +1,5 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { MarketSymbol, Sentiment, PulserAnalysis, MarketType, MarketSentiment, TrendingStock } from "../types";
 import { getFirebaseDb } from "./firebase";
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
@@ -41,15 +41,19 @@ export class PulserAgent {
       const ai = new GoogleGenAI({ apiKey });
 
       const prompt = `Find 5-8 highly relevant market symbols (tickers) and company names matching "${query}" for the "${region}" region.
+      The user might provide a ticker OR a partial company name. 
       Include a mix of stocks and crypto if relevant.
       Return ONLY a JSON array of objects: 
-      [{"symbol": "TICKER", "name": "Full Name", "type": "STOCK" | "CRYPTO" | "COMMODITY" | "INDEX"}]
+      [{"symbol": "TICKER", "name": "Full Name", "type": "STOCKS" | "CRYPTO" | "INDIAN_STOCKS" | "US_STOCKS"}]
       
       CRITICAL: Use exact tickers (e.g., AAPL, MSFT, RELIANCE.NS, BTC). Use the .NS suffix for Indian NSE stocks.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview", // Use faster model for suggestions
-        contents: prompt
+        contents: prompt,
+        config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+        }
       });
 
       const text = response.text || "";
@@ -81,7 +85,8 @@ export class PulserAgent {
         model: "gemini-3-flash-preview",
         contents: prompt,
         config: {
-          tools: [{ googleSearch: {} }]
+          tools: [{ googleSearch: {} }],
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
         }
       });
 

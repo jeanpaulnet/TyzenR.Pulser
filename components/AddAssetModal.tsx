@@ -23,23 +23,47 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
   const [isSearching, setIsSearching] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cacheRef = useRef<Record<string, { symbol: string; name: string; type: MarketType }[]>>({});
 
   useEffect(() => {
+    const queryKey = `${symbol.trim().toUpperCase()}_${region}`;
+    
+    if (cacheRef.current[queryKey]) {
+      setSearchSuggestions(cacheRef.current[queryKey]);
+      const results = cacheRef.current[queryKey];
+      const exactMatch = results.find(r => r.symbol.toUpperCase() === symbol.trim().toUpperCase());
+      if (exactMatch) {
+        setCompanyName(exactMatch.name);
+        setType(exactMatch.type);
+        setIsFromSuggestion(true);
+      }
+      return;
+    }
+
     const timer = setTimeout(async () => {
       if (symbol && symbol.length >= 2) {
         setIsSearching(true);
         try {
           const results = await pulser.searchSuggestions(symbol, region);
           setSearchSuggestions(results);
+          cacheRef.current[queryKey] = results;
           
-          // If we have an exact match, auto-fill company details and mark as "from suggestion"
-          const exactMatch = results.find(r => r.symbol.toUpperCase() === symbol.trim().toUpperCase());
-          if (exactMatch) {
-            setCompanyName(exactMatch.name);
-            setType(exactMatch.type);
-            setIsFromSuggestion(true);
+          // If we have an exact match on symbol OR a very close match on name
+          const upperInput = symbol.trim().toUpperCase();
+          const match = results.find(r => 
+            r.symbol.toUpperCase() === upperInput || 
+            r.name.toUpperCase() === upperInput ||
+            r.name.toUpperCase().startsWith(upperInput)
+          );
+
+          if (match) {
+            setCompanyName(match.name);
+            setType(match.type);
+            // If it's an exact symbol match, we flag it for immediate save
+            if (match.symbol.toUpperCase() === upperInput) {
+              setIsFromSuggestion(true);
+            }
           } else if (results.length > 0 && !isFromSuggestion) {
-            // Even if not exact, show top result as a "potential" name to help user
             setCompanyName(results[0].name);
             setType(results[0].type);
           }
@@ -55,7 +79,7 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
           setError(null);
         }
       }
-    }, 400);
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [symbol, region, isFromSuggestion]);
@@ -179,7 +203,7 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
                 />
                 {isSearching && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
+                    <Loader2 className="w-3 h-3 animate-spin text-blue-500 dark:text-blue-400" />
                   </div>
                 )}
               </div>
