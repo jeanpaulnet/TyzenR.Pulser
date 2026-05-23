@@ -3,7 +3,63 @@ import { MarketSymbol, Sentiment, PulserAnalysis, MarketType, MarketSentiment, T
 import { getFirebaseDb } from "./firebase";
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 
+declare const process: any;
+
 export class PulserAgent {
+  private async callAiDirectFallback(prompt: string, config: any = {}, model: string = "gemini-3-flash-preview"): Promise<any> {
+    const apiKey = (process.env as any).GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("Client-side fallback GEMINI_API_KEY is not configured.");
+    }
+
+    // Attempt the requested model first. If it looks like an internal/experimental candidate,
+    // we also try generally available standard models like gemini-2.5-flash and gemini-1.5-flash.
+    const modelsToTry = [model, "gemini-2.5-flash", "gemini-1.5-flash"];
+    let lastError: any = null;
+
+    for (const currentModel of modelsToTry) {
+      try {
+        // Map unreleased/internal models safely to universally supported Google API endpoints
+        const resolvedModel = currentModel.replace("gemini-3-flash-preview", "gemini-2.5-flash");
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${resolvedModel}:generateContent?key=${apiKey}`;
+        
+        const contents = [{ parts: [{ text: prompt }] }];
+        const body: any = { contents };
+        
+        if (config?.generationConfig) {
+          body.generationConfig = config.generationConfig;
+        }
+        if (config?.tools) {
+          body.tools = config.tools;
+        }
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`Direct model query (${resolvedModel}) failed with status ${response.status}: ${errText}`);
+        }
+
+        const data = await response.json();
+        const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        
+        return {
+          text: candidateText,
+          candidates: data.candidates
+        };
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Direct fallback with model option ${currentModel} failed:`, err);
+      }
+    }
+
+    throw lastError || new Error("All client-side direct API fallbacks failed.");
+  }
+
   private async callAi(prompt: string, config: any = {}, model: string = "gemini-3-flash-preview"): Promise<any> {
     try {
       const response = await fetch('/api/ai/generate', {
@@ -12,15 +68,32 @@ export class PulserAgent {
         body: JSON.stringify({ prompt, config, model })
       });
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'AI request failed');
+      if (response.ok) {
+        return await response.json();
       }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Call AI Error:', error);
-      throw error;
+
+      // If backend exists but returns an error, retrieve it
+      let errorMsg = 'AI request failed';
+      try {
+        const error = await response.json();
+        errorMsg = error.error || errorMsg;
+      } catch (e) {}
+
+      // If a 404 occurs, we are likely on a static host that doesn't route /api or support the custom server container
+      if (response.status === 404) {
+        console.warn('Backend API returned 404. Initiating direct client-side fallback query...');
+        return await this.callAiDirectFallback(prompt, config, model);
+      }
+
+      throw new Error(errorMsg);
+    } catch (error: any) {
+      console.error('Call AI backend server request failed, attempting direct fallback...', error);
+      try {
+        return await this.callAiDirectFallback(prompt, config, model);
+      } catch (fallbackError: any) {
+        console.error('Direct fallback also failed:', fallbackError);
+        throw new Error(error.message || 'AI request failed');
+      }
     }
   }
 
