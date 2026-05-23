@@ -1,32 +1,26 @@
 
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { MarketSymbol, Sentiment, PulserAnalysis, MarketType, MarketSentiment, TrendingStock } from "../types";
 import { getFirebaseDb } from "./firebase";
 import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 
 export class PulserAgent {
-  private cachedApiKey: string | null = null;
-
-  private async getApiKey(): Promise<string> {
-    if (this.cachedApiKey) return this.cachedApiKey;
-    
-    // 1. Try Environment Key first (Standard for this platform)
-    const envKey = typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : undefined;
-    if (envKey) {
-      this.cachedApiKey = envKey;
-      return envKey;
-    }
-
-    // 2. Fallback to external endpoint if env key is missing
+  private async callAi(prompt: string, config: any = {}, model: string = "gemini-3-flash-preview"): Promise<any> {
     try {
-      const response = await fetch('https://webapi.tyzenr.com/keys/gemini');
-      if (!response.ok) throw new Error('Failed to fetch fallback API key');
-      const data = await response.text();
-      this.cachedApiKey = data.trim();
-      return this.cachedApiKey;
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, config, model })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'AI request failed');
+      }
+      
+      return await response.json();
     } catch (error) {
-      console.error('API Key Retrieval Failed:', error);
-      throw new Error('Required API configuration missing. Please ensure GEMINI_API_KEY is set.');
+      console.error('Call AI Error:', error);
+      throw error;
     }
   }
 
@@ -37,9 +31,6 @@ export class PulserAgent {
     if (!query || query.length < 2) return [];
 
     try {
-      const apiKey = await this.getApiKey();
-      const ai = new GoogleGenAI({ apiKey });
-
       const prompt = `Find 5-8 highly relevant market symbols (tickers) and company names matching "${query}" for the "${region}" region.
       The user might provide a ticker OR a partial company name. 
       Include a mix of stocks and crypto if relevant.
@@ -48,12 +39,8 @@ export class PulserAgent {
       
       CRITICAL: Use exact tickers (e.g., AAPL, MSFT, RELIANCE.NS, BTC). Use the .NS suffix for Indian NSE stocks.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview", // Use faster model for suggestions
-        contents: prompt,
-        config: {
-          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
-        }
+      const response = await this.callAi(prompt, {
+        generationConfig: { responseMimeType: "application/json" }
       });
 
       const text = response.text || "";
@@ -72,22 +59,14 @@ export class PulserAgent {
    */
   async validateSymbol(symbol: string, type: string, region: string): Promise<{ isValid: boolean; name?: string; reason?: string; suggestedSymbol?: string }> {
     try {
-      const apiKey = await this.getApiKey();
-      const ai = new GoogleGenAI({ apiKey });
-
       const prompt = `Quick verification: Does the market symbol "${symbol}" exist in the ${region} region as a ${type}? 
       Use Google Search to confirm. 
       If it exists EXACTLY, return EXACTLY this JSON: {"isValid": true, "name": "Company/Asset Full Name"}
       If it does not exist as entered, but you found a highly likely match (e.g., the user entered a company name instead of a ticker, or missed a mandatory suffix like .NS for India), return: {"isValid": false, "suggestedSymbol": "TICKER", "name": "Company/Asset Full Name", "reason": "Found matching symbol for your input"}
       If it does not exist or is incorrect, return: {"isValid": false, "reason": "Short explanation why it might be invalid"}`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }],
-          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
-        }
+      const response = await this.callAi(prompt, {
+        tools: [{ googleSearch: {} }]
       });
 
       const text = response.text || "";
@@ -155,9 +134,6 @@ export class PulserAgent {
           console.warn("Cache lookup failed, proceeding with fresh scan:", cacheError);
         }
       }
-
-      const apiKey = await this.getApiKey();
-      const ai = new GoogleGenAI({ apiKey });
 
       const currentDate = new Date().toLocaleDateString('en-US', { 
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
@@ -232,12 +208,8 @@ export class PulserAgent {
         }
       }`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }]
-        }
+      const response = await this.callAi(prompt, {
+        tools: [{ googleSearch: {} }]
       });
 
       const text = response.text || "";
@@ -445,9 +417,6 @@ export class PulserAgent {
    */
   async getLivePrice(symbol: MarketSymbol): Promise<{ price: string; currency: string; source: string }> {
     try {
-      const apiKey = await this.getApiKey();
-      const ai = new GoogleGenAI({ apiKey });
-
       const sourcePreference = symbol.type === 'CRYPTO' 
         ? "PRIORITIZE fetching the current price from coinmarketcap.com." 
         : "Use Google Finance, Yahoo Finance, or local exchange websites.";
@@ -460,12 +429,8 @@ export class PulserAgent {
       
       If you cannot find a price, return: {"price": "0.00", "currency": "USD", "source": "Not Found"}`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }]
-        }
+      const response = await this.callAi(prompt, {
+        tools: [{ googleSearch: {} }]
       });
 
       const text = response.text || "";
@@ -488,9 +453,6 @@ export class PulserAgent {
    */
   async getMarketSentiment(): Promise<MarketSentiment | null> {
     try {
-      const apiKey = await this.getApiKey();
-      const ai = new GoogleGenAI({ apiKey });
-
       const prompt = `Find the following real-time market sentiment data:
       1. Fear & Greed Index (current value and label, e.g., 72, "Greed")
       2. Warren Buffett Indicator (current percentage value of Market Cap to GDP and status, e.g., 185%, "Significantly Overvalued")
@@ -507,12 +469,8 @@ export class PulserAgent {
         "nifty50": {"value": "string", "change": "string (e.g. -0.2%)"}
       }`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }]
-        }
+      const response = await this.callAi(prompt, {
+        tools: [{ googleSearch: {} }]
       });
 
       const text = response.text || "";
@@ -536,9 +494,6 @@ export class PulserAgent {
    */
   async getTrendingStocks(): Promise<TrendingStock[]> {
     try {
-      const apiKey = await this.getApiKey();
-      const ai = new GoogleGenAI({ apiKey });
-
       const prompt = `Search for the TOP 5 most trending stocks right now (Globally and in India).
       Consider volume, social media buzz, and recent news.
       
@@ -547,12 +502,8 @@ export class PulserAgent {
         {"symbol": "TICKER", "name": "Name", "price": "Current Price", "change": "Today Percentage Change"}
       ]`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }]
-        }
+      const response = await this.callAi(prompt, {
+        tools: [{ googleSearch: {} }]
       });
 
       const text = response.text || "";

@@ -6,7 +6,8 @@ import { pulser } from './services/pulserAgent';
 import MarketCard from './components/MarketCard';
 import AddSymbolModal from './components/AddAssetModal';
 import SnapshotModal from './components/SnapshotModal';
-import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon, LogOut, Mail, Send, CheckCircle2, GripHorizontal, ChevronDown, ChevronsLeft, ChevronsRight, MessageSquare, Briefcase } from 'lucide-react';
+import { TopUpModal } from './components/TopUpModal';
+import { Activity, Plus, Search, ShieldCheck, Zap, Globe, Github, Info, TrendingUp, LogIn, User, Sun, Moon, LogOut, Mail, Send, CheckCircle2, GripHorizontal, ChevronDown, ChevronsLeft, ChevronsRight, MessageSquare, Briefcase, Wallet } from 'lucide-react';
 import { jwtDecode } from 'jwt-decode';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -112,6 +113,7 @@ const App: React.FC = () => {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [editingSymbolId, setEditingSymbolId] = useState<string | null>(null);
   const [isGeneralNotesOpen, setIsGeneralNotesOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
@@ -175,15 +177,44 @@ const App: React.FC = () => {
   const hasUSStocks = state.symbols.some(s => s.region === 'US');
   const hasIndiaStocks = state.symbols.some(s => s.region === 'INDIA');
 
+  // Handlers
+  const openTopUp = () => setIsTopUpModalOpen(true);
+
   // Sync with URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const symbol = params.get('symbol');
     const region = params.get('region') || 'US';
+    
+    // Handle Stripe Success
+    const paymentStatus = params.get('payment');
+    if (paymentStatus === 'success' && user) {
+      // For now, we'll implement a simple client-side verification 
+      // In a production app, the server would verify the session_id and update DB
+      const creditedKey = `stripe_credited_${params.get('session_id')}`;
+      if (!localStorage.getItem(creditedKey)) {
+        const amountStr = new URLSearchParams(window.location.search).get('amount') || '10';
+        const amount = parseInt(amountStr);
+        
+        const balances = JSON.parse(localStorage.getItem('pulser_balances') || '{}');
+        const newBalance = (user.balance || 0) + (amount === 5 ? 5 : amount === 10 ? 11 : 30);
+        
+        balances[user.email] = newBalance;
+        if (userIp) balances[`ip_${userIp}`] = newBalance;
+        localStorage.setItem('pulser_balances', JSON.stringify(balances));
+        localStorage.setItem(creditedKey, 'true');
+        
+        setUser(prev => prev ? { ...prev, balance: newBalance } : null);
+        
+        // Clean URL
+        window.history.replaceState({}, '', '/');
+      }
+    }
+
     if (symbol) {
       setSelectedSymbolKey({ symbol, region });
     }
-  }, []);
+  }, [user, userIp]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -723,8 +754,8 @@ const App: React.FC = () => {
                           </div>
                         </div>
                         <button 
-                          onClick={() => { setIsUserMenuOpen(false); setIsSupportModalOpen(true); }}
-                          className={`w-full mt-2 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                          onClick={() => { setIsUserMenuOpen(false); openTopUp(); }}
+                          className={`w-full mt-2 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 ${
                             Math.floor((user?.balance || 0) / SCAN_COST) > 10 
                               ? (theme === 'dark' ? 'bg-slate-500/10 text-slate-400 hover:bg-slate-500/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')
                               : Math.floor((user?.balance || 0) / SCAN_COST) > 0
@@ -732,7 +763,7 @@ const App: React.FC = () => {
                                 : (theme === 'dark' ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/20' : 'bg-rose-50 text-rose-600 hover:bg-rose-100')
                           }`}
                         >
-                          Recharge ($10 / 100 Scans)
+                          <Wallet className="w-3 h-3" /> Recharge ($10 / 100 Scans)
                         </button>
                       </div>
                       
@@ -1217,6 +1248,13 @@ const App: React.FC = () => {
           />
         );
       })()}
+
+      {isTopUpModalOpen && user && (
+        <TopUpModal 
+          onClose={() => setIsTopUpModalOpen(false)} 
+          userEmail={user.email} 
+        />
+      )}
 
       {isLoginModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">

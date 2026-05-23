@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MarketSymbol, MarketType, PulserAnalysis, Sentiment } from '../types';
 import { SENTIMENT_COLORS } from '../constants';
-import { TrendingUp, TrendingDown, Minus, RefreshCw, ExternalLink, AlertCircle, Clock, Calendar, BarChart3, Fingerprint, GripVertical, ChevronRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, RefreshCw, ExternalLink, AlertCircle, Clock, Calendar, BarChart3, Fingerprint, GripVertical, ChevronLeft, ChevronRight, Bot } from 'lucide-react';
 import SnapshotModal from './SnapshotModal';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 
 interface MarketCardProps {
   symbol: MarketSymbol;
@@ -22,6 +22,129 @@ interface MarketCardProps {
 
 const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis, onRefresh, onRefreshPrice, onRemove, onOpenSnapshot, onEditNotes, isSortable, showHint }) => {
   const isAnalyzing = analysis?.isAnalyzing;
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const scrollSources = (amount: number) => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  };
+
+  const [activeStep, setActiveStep] = useState<number>(-1);
+
+  useEffect(() => {
+    if (isAnalyzing) {
+      setActiveStep(0);
+      const interval = setInterval(() => {
+        setActiveStep(prev => {
+          if (prev < 3) return prev + 1;
+          return prev;
+        });
+      }, 2500);
+      return () => clearInterval(interval);
+    } else {
+      setActiveStep(-1);
+    }
+  }, [isAnalyzing]);
+
+  const renderStatusBoxes = () => {
+    const steps = [
+      { 
+        id: 'news', 
+        name: 'News',
+        completedClass: 'bg-gradient-to-br from-blue-500 to-indigo-600 border-blue-500 text-white shadow-md shadow-blue-500/10',
+        fetchingClass: 'bg-blue-50/40 border-blue-300 text-blue-600 dark:bg-blue-950/30 dark:border-blue-500/30 dark:text-blue-400 font-bold shadow-sm',
+        iconClass: 'text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50',
+        pingClass: 'bg-blue-500/15'
+      },
+      { 
+        id: 'analysts', 
+        name: 'Analysts',
+        completedClass: 'bg-gradient-to-br from-pink-500 to-purple-600 border-purple-500 text-white shadow-md shadow-purple-500/10',
+        fetchingClass: 'bg-purple-50/40 border-purple-300 text-purple-600 dark:bg-purple-950/30 dark:border-purple-500/30 dark:text-purple-400 font-bold shadow-sm',
+        iconClass: 'text-purple-500 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50',
+        pingClass: 'bg-purple-500/15'
+      },
+      { 
+        id: 'fundamentals', 
+        name: 'Fundamentals',
+        completedClass: 'bg-gradient-to-br from-amber-500 to-orange-600 border-orange-500 text-white shadow-md shadow-orange-500/10',
+        fetchingClass: 'bg-orange-50/40 border-orange-300 text-orange-600 dark:bg-orange-950/30 dark:border-orange-500/30 dark:text-orange-400 font-bold shadow-sm',
+        iconClass: 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50',
+        pingClass: 'bg-amber-500/15'
+      },
+      { 
+        id: 'technicals', 
+        name: 'Technicals',
+        completedClass: 'bg-gradient-to-br from-emerald-500 to-teal-600 border-emerald-500 text-white shadow-md shadow-emerald-500/10',
+        fetchingClass: 'bg-emerald-50/40 border-emerald-300 text-emerald-600 dark:bg-emerald-950/30 dark:border-emerald-500/30 dark:text-emerald-400 font-bold shadow-sm',
+        iconClass: 'text-emerald-500 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50',
+        pingClass: 'bg-emerald-500/15'
+      }
+    ];
+
+    return (
+      <div className="relative w-full max-w-[210px] mx-auto py-1">
+        <div className="grid grid-cols-2 gap-2 w-full">
+          {steps.map((step, idx) => {
+            let boxState: 'grey' | 'fetching' | 'completed' = 'grey';
+
+            if (!isAnalyzing && analysis) {
+              boxState = 'completed';
+            } else if (isAnalyzing) {
+              if (activeStep > idx) {
+                boxState = 'completed';
+              } else if (activeStep === idx) {
+                boxState = 'fetching';
+              } else {
+                boxState = 'grey';
+              }
+            }
+
+            return (
+              <div
+                key={step.id}
+                className="relative flex flex-col items-center justify-center p-2 select-none group hover:scale-102 transition-all duration-300"
+              >
+                {/* Centralized Bot Icon with stateful colors and effects */}
+                <div className="relative mb-2 flex items-center justify-center">
+                  {boxState === 'fetching' && (
+                    <>
+                      <span className={`absolute -inset-2.5 rounded-full ${step.pingClass} animate-ping opacity-60`} />
+                      <Bot className={`w-10 h-10 animate-bounce animate-pulse ${step.iconClass.split(' ')[0]}`} />
+                    </>
+                  )}
+                  {boxState === 'completed' && (
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                    >
+                      <Bot className={`w-10 h-10 ${step.iconClass.split(' ')[0]} filter drop-shadow-[0_2px_8px_rgba(59,130,246,0.15)]`} />
+                    </motion.div>
+                  )}
+                  {boxState === 'grey' && (
+                    <Bot className="w-10 h-10 text-slate-300 dark:text-slate-700 transition-colors duration-300 group-hover:text-slate-450 dark:group-hover:text-slate-550" />
+                  )}
+                </div>
+
+                {/* Caption */}
+                <span className={`text-[8.5px] font-black uppercase tracking-wider leading-none mt-1 transition-colors duration-300 ${
+                  boxState === 'completed'
+                    ? `${step.iconClass.split(' ')[0]}`
+                    : boxState === 'fetching'
+                    ? `${step.iconClass.split(' ')[0]} animate-pulse`
+                    : 'text-slate-400 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400'
+                }`}>
+                  {step.name}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   const {
     attributes,
@@ -198,28 +321,55 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
                </div>
             </div>
 
-            <div className="relative flex-1">
-              <p className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-4 min-h-[4.5rem] italic">
-                "{analysis.summary}"
+            <div className={`relative ${analysis.summary.includes('syncing market data') ? '' : 'flex-1'}`}>
+              <p className={`text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-4 italic ${analysis.summary.includes('syncing market data') ? 'min-h-0' : 'min-h-[4.5rem]'}`}>
+                "{analysis.summary.trim()}"
               </p>
+            </div>
+
+            <div className="pt-2">
+              {renderStatusBoxes()}
             </div>
 
             {analysis.sources?.length ? analysis.sources.length > 0 && (
               <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                <span className="text-[9px] text-slate-500 dark:text-slate-600 uppercase tracking-[0.2em] font-black block mb-2.5">Global Intelligence Sources</span>
-                <div className="flex flex-wrap gap-2">
-                  {analysis.sources.map((source, idx) => (
-                    <a 
-                      key={idx} 
-                      href={source.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-[9px] font-bold text-slate-600 dark:text-slate-500 hover:text-purple-600 dark:hover:text-emerald-400 transition-colors bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-1.5 rounded-lg"
-                    >
-                      {(source.title?.length || 0) > 15 ? source.title.substring(0, 15) + '...' : source.title}
-                      <ExternalLink className="w-2 h-2 opacity-50" />
-                    </a>
-                  ))}
+                <span className="text-[9px] text-slate-500 dark:text-slate-600 uppercase tracking-[0.2em] font-black block mb-2.5">Intelligence Sources</span>
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    onClick={() => scrollSources(-100)}
+                    className="p-1 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0 select-none transition-all flex items-center justify-center cursor-pointer"
+                    type="button"
+                    title="Previous sources"
+                  >
+                    <ChevronLeft className="w-3 h-3" />
+                  </button>
+                  
+                  <div 
+                    ref={scrollContainerRef}
+                    className="flex-1 flex flex-row overflow-x-auto gap-1.5 py-1 scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                  >
+                    {analysis.sources.map((source, idx) => (
+                      <a 
+                        key={idx} 
+                        href={source.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[9px] font-bold text-slate-600 dark:text-slate-500 hover:text-purple-600 dark:hover:text-emerald-400 transition-colors bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-1.5 rounded-lg shrink-0 whitespace-nowrap min-w-0"
+                      >
+                        {(source.title?.length || 0) > 15 ? source.title.substring(0, 15) + '...' : source.title}
+                        <ExternalLink className="w-2.5 h-2.5 opacity-50 shrink-0" />
+                      </a>
+                    ))}
+                  </div>
+
+                  <button 
+                    onClick={() => scrollSources(100)}
+                    className="p-1 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0 select-none transition-all flex items-center justify-center cursor-pointer"
+                    type="button"
+                    title="Next sources"
+                  >
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
                 </div>
               </div>
             ) : null}
@@ -240,16 +390,22 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
             )}
           </div>
         ) : (
-          <div className="h-44 flex flex-col items-center justify-center space-y-4 border border-dashed rounded-3xl bg-white/50 dark:bg-slate-950 transition-colors duration-300 text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-800">
+          <div className="min-h-[11rem] py-5 px-4 flex flex-col items-center justify-center space-y-4 border border-dashed rounded-3xl bg-white/50 dark:bg-slate-950 transition-colors duration-300 text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-800">
             <div className="relative">
               <RefreshCw className={`w-8 h-8 animate-spin bg-gradient-to-r from-rose-500 via-amber-500 to-emerald-500 bg-clip-text text-transparent`} />
-              <div className="absolute inset-0 bg-gradient-to-r from-rose-500/20 via-amber-500/20 to-emerald-500/20 blur-xl rounded-full animate-pulse" />
+              <div className="absolute inset-0 bg-gradient-to-r from-rose-500/20 via-amber-200/20 to-emerald-500/20 blur-xl rounded-full animate-pulse" />
             </div>
-            <div className="text-center">
+            <div className="text-center w-full">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600">
                 {isAnalyzing ? (analysis?.status || 'Synthesizing Markets') : 'Click Refresh to start AI Engine'}
               </p>
-              {isAnalyzing && !analysis?.status && <p className="text-[9px] text-slate-500 dark:text-slate-700 mt-1">Checking Reuters, Bloomberg, WSJ...</p>}
+              {isAnalyzing && !analysis?.status && <p className="text-[9px] text-slate-500 dark:text-slate-700 mt-1 mb-3">Checking Reuters, Bloomberg, WSJ...</p>}
+              
+              {isAnalyzing && (
+                <div className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {renderStatusBoxes()}
+                </div>
+              )}
             </div>
           </div>
         )}
