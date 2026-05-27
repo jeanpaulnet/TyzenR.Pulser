@@ -120,7 +120,23 @@ export class PulserAgent {
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       const data = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
       
-      return data;
+      const normalized = (data as any[]).map(item => {
+        let typeVal = MarketType.STOCK;
+        const rawType = String(item.type || '').toUpperCase();
+        if (rawType.includes('CRYPTO')) {
+          typeVal = MarketType.CRYPTO;
+        } else if (rawType.includes('COMMODITY') || rawType.includes('COMMODITIES')) {
+          typeVal = MarketType.COMMODITY;
+        } else if (rawType.includes('INDEX') || rawType.includes('INDICES')) {
+          typeVal = MarketType.INDEX;
+        }
+        return {
+          symbol: String(item.symbol || '').trim().toUpperCase(),
+          name: String(item.name || '').trim(),
+          type: typeVal
+        };
+      });
+      return normalized;
     } catch (error) {
       console.error('Search suggestions error:', error);
       return [];

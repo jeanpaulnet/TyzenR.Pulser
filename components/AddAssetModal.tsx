@@ -104,6 +104,33 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
     let hasErrors = false;
     const updatedColumns = [...columns];
 
+    // 0. Auto-resolve local matches based on company name keyword or symbol name
+    for (let i = 0; i < updatedColumns.length; i++) {
+      const col = updatedColumns[i];
+      const trimmedSymbol = col.symbol.trim();
+
+      if (trimmedSymbol && !col.isFromSuggestion) {
+        const localMatches = searchLocalSymbols(trimmedSymbol, col.region);
+        if (localMatches.length > 0) {
+          const upper = trimmedSymbol.toUpperCase();
+          const exactSymbolMatch = localMatches.find(m => m.symbol.toUpperCase() === upper);
+          const exactNameMatch = localMatches.find(m => m.name.toUpperCase() === upper);
+          const startsWithNameMatch = localMatches.find(m => m.name.toUpperCase().startsWith(upper));
+          
+          const bestMatch = exactSymbolMatch || exactNameMatch || startsWithNameMatch || localMatches[0];
+          if (bestMatch) {
+            updatedColumns[i] = {
+              ...col,
+              symbol: bestMatch.symbol,
+              companyName: bestMatch.name,
+              type: bestMatch.type,
+              isFromSuggestion: true
+            };
+          }
+        }
+      }
+    }
+
     // 1. Core validations
     for (let i = 0; i < updatedColumns.length; i++) {
       const col = updatedColumns[i];
@@ -340,6 +367,7 @@ const SymbolColumnPanel: React.FC<{
   } = column;
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // 1. Instant local search match mapping
   useEffect(() => {
@@ -347,7 +375,12 @@ const SymbolColumnPanel: React.FC<{
     if (trimmed.length > 0) {
       const localResults = searchLocalSymbols(trimmed, region);
       const upper = trimmed.toUpperCase();
-      const exactMatch = localResults.find(r => r.symbol.toUpperCase() === upper);
+      
+      const exactMatch = localResults.find(r => 
+        r.symbol.toUpperCase() === upper ||
+        r.name.toUpperCase() === upper ||
+        (upper.length >= 3 && r.name.toUpperCase().startsWith(upper))
+      );
 
       onUpdate(id, {
         searchSuggestions: localResults,
@@ -364,6 +397,19 @@ const SymbolColumnPanel: React.FC<{
       });
     }
   }, [symbol, region]);
+
+  // 3. Click outside handler to dismiss search suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        onUpdate(id, { searchSuggestions: [] });
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [id, onUpdate]);
 
   // 2. Debounced API search suggestions for manual queries
   useEffect(() => {
@@ -431,18 +477,22 @@ const SymbolColumnPanel: React.FC<{
       )}
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-200/50 dark:border-slate-800/80">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            Symbol #{index + 1}
-          </span>
-          {isValidating && (
-            <span className="flex items-center gap-1 text-[10px] text-blue-500 font-extrabold animate-pulse">
-              <Loader2 className="w-3 h-3 animate-spin" /> Verifying
-            </span>
-          )}
-        </div>
+        {(totalColumns > 1 || isValidating) && (
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200/50 dark:border-slate-800/80">
+            {totalColumns > 1 && (
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Symbol #{index + 1}
+              </span>
+            )}
+            {isValidating && (
+              <span className="flex items-center gap-1 text-[10px] text-blue-500 font-extrabold animate-pulse ml-auto">
+                <Loader2 className="w-3 h-3 animate-spin" /> Verifying
+              </span>
+            )}
+          </div>
+        )}
 
-        <div className="relative">
+        <div className="relative" ref={containerRef}>
           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Market Ticker</label>
           <div className="relative">
             <input
