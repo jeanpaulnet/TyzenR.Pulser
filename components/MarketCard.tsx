@@ -36,11 +36,8 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
     if (isAnalyzing) {
       setActiveStep(0);
       const interval = setInterval(() => {
-        setActiveStep(prev => {
-          if (prev < 3) return prev + 1;
-          return prev;
-        });
-      }, 2500);
+        setActiveStep(prev => prev + 1);
+      }, 1500); // 1.5 seconds per time slice
       return () => clearInterval(interval);
     } else {
       setActiveStep(-1);
@@ -91,13 +88,19 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
 
             if (!isAnalyzing && analysis) {
               boxState = 'completed';
-            } else if (isAnalyzing) {
-              if (activeStep > idx) {
-                boxState = 'completed';
-              } else if (activeStep === idx) {
+            } else if (isAnalyzing && activeStep >= 0) {
+              const currentActiveIdx = activeStep % 4;
+              if (idx === currentActiveIdx) {
                 boxState = 'fetching';
               } else {
-                boxState = 'grey';
+                // A step shows as 'completed' if it has finished its first turn in the sequence:
+                // either on a subsequent round (activeStep >= 4), or earlier in this round.
+                const hasFinishedFirstTime = activeStep >= 4 || activeStep > idx;
+                if (hasFinishedFirstTime) {
+                  boxState = 'completed';
+                } else {
+                  boxState = 'grey';
+                }
               }
             }
 
