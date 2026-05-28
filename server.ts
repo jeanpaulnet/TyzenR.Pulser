@@ -23,7 +23,14 @@ function getStripe() {
 const getGenAI = () => {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY is missing");
-  return new GoogleGenAI({ apiKey: key });
+  return new GoogleGenAI({ 
+    apiKey: key,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build'
+      }
+    }
+  });
 };
 
 async function startServer() {
@@ -107,17 +114,16 @@ async function startServer() {
   // Proxy Gemini calls to keep API key safe
   app.post("/api/ai/generate", async (req, res) => {
     try {
-      const { prompt, config, model = "gemini-3-flash-preview" } = req.body;
+      const { prompt, config, model = "gemini-3.5-flash" } = req.body;
       const genAI = getGenAI();
-      const aiModel = genAI.getGenerativeModel({ model });
       
-      const result = await aiModel.generateContent({
+      const response = await genAI.models.generateContent({
+        model: model,
         contents: prompt,
-        ...config
+        config: config
       });
       
-      const response = await result.response;
-      res.json({ text: response.text(), candidates: (response as any).candidates });
+      res.json({ text: response.text, candidates: response.candidates });
     } catch (error: any) {
       console.error("AI API Error:", error);
       res.status(500).json({ error: error.message });

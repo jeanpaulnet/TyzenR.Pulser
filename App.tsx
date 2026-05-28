@@ -424,9 +424,11 @@ const App: React.FC = () => {
     const currentBalances = JSON.parse(localStorage.getItem('pulser_balances') || '{}');
     const ipKey = `ip_${userIp}`;
     
-    // Determine effective balance based on IP restriction
+    // Determine effective balance based on logged-in user email or IP restriction
     let effectiveBalance = 0;
-    if (userIp && currentBalances[ipKey] !== undefined) {
+    if (user && currentBalances[user.email] !== undefined) {
+      effectiveBalance = currentBalances[user.email];
+    } else if (userIp && currentBalances[ipKey] !== undefined) {
       effectiveBalance = currentBalances[ipKey];
     } else if (user) {
       effectiveBalance = user.balance;
@@ -544,9 +546,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleScanAll = async () => {
-    for (const symbol of state.symbols) {
-      await handleAnalyze(symbol);
-    }
+    await Promise.all(state.symbols.map(symbol => handleAnalyze(symbol)));
   };
 
   const handleAddSymbol = (symbol: MarketSymbol) => {

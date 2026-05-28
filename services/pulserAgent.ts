@@ -6,21 +6,20 @@ import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from "firebase/firest
 declare const process: any;
 
 export class PulserAgent {
-  private async callAiDirectFallback(prompt: string, config: any = {}, model: string = "gemini-3-flash-preview"): Promise<any> {
+  private async callAiDirectFallback(prompt: string, config: any = {}, model: string = "gemini-3.5-flash"): Promise<any> {
     const apiKey = (process.env as any).GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error("Client-side fallback GEMINI_API_KEY is not configured.");
     }
 
     // Attempt the requested model first. If it looks like an internal/experimental candidate,
-    // we also try generally available standard models like gemini-2.5-flash and gemini-1.5-flash.
-    const modelsToTry = [model, "gemini-2.5-flash", "gemini-1.5-flash"];
+    // we also try generally available standard models like gemini-2.5-flash.
+    const modelsToTry = [model, "gemini-2.5-flash"];
     let lastError: any = null;
 
     for (const currentModel of modelsToTry) {
       try {
-        // Map unreleased/internal models safely to universally supported Google API endpoints
-        const resolvedModel = currentModel.replace("gemini-3-flash-preview", "gemini-2.5-flash");
+        const resolvedModel = currentModel;
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${resolvedModel}:generateContent?key=${apiKey}`;
         
         const contents = [{ parts: [{ text: prompt }] }];
@@ -60,7 +59,7 @@ export class PulserAgent {
     throw lastError || new Error("All client-side direct API fallbacks failed.");
   }
 
-  private async callAi(prompt: string, config: any = {}, model: string = "gemini-3-flash-preview"): Promise<any> {
+  private async callAi(prompt: string, config: any = {}, model: string = "gemini-3.5-flash"): Promise<any> {
     try {
       const response = await fetch('/api/ai/generate', {
         method: 'POST',
