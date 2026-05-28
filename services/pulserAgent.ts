@@ -274,20 +274,21 @@ export class PulserAgent {
       
       ${priceSourceHint}
       
-      CRITICAL INSTRUCTION: You MUST use the Google Search tool for EVERYTHING. 
-      Specifically for the "peers" section: Conduct a direct search for the REAL-TIME Market Cap, PE Ratio, PB Ratio, and CMP (Current Market Price) for at least 3-4 direct competitors. Do NOT use training data or placeholders. Citation of recent market data is required.
+      CRITICAL INSTRUCTION: Use the Google Search tool efficiently with consolidated searches.
+      Specifically for the "peers" section: Conduct a quick search for the REAL-TIME Market Cap, PE Ratio, PB Ratio, and CMP (Current Market Price) for 3 direct competitors. Do NOT use fake placeholders.
       
-      Analyze: Recent price action catalysts, earnings reports, regulatory news, and analyst sentiment.
+      Analyze: Recent price action catalysts, earnings, and analyst sentiment.
       
-      CRITICAL: For "growthData", you MUST find and include the Revenue and Profit (Net Income) for the PAST 5 CONSECUTIVE YEARS. This is the top priority for the "Growth Chart". If exact revenue/profit isn't found in one search, look for annual reports or investor presentations.
+      CRITICAL: For "growthData", find and include the Revenue and Profit (Net Income) for the PAST 5 CONSECUTIVE YEARS for the "Growth Chart". Keep descriptions brief.
       
-      CRITICAL: For "historicalData", use Google Finance search results to provide 10-15 data points for each period: 1 Month (1M), 1 Year (1Y), and 5 Years (5Y). Ensure the prices and dates are accurate.
+      CRITICAL: For "historicalData", use Google Finance search results to provide 6-8 key spaced-out data points for each period: 1 Month (1M), 1 Year (1Y), and 5 Years (5Y). This is optimized for fast parsing and smooth rendering.
       
-      CRITICAL: For "analystViews", find the 3 most RECENT ratings (Buy/Sell/Hold) and price targets from established firms like Goldman Sachs, J.P. Morgan, Morningstar, etc.
+      CRITICAL: For "analystViews", find 2-3 of the most RECENT ratings (Buy/Sell/Hold) and price targets.
       
       URL POLICY: All URLs in your response MUST be verifiable, live article links found in your search results. 
-      Do NOT provide dead links, 404 pages, or generic homepages. EVERY link must point to a specific, active article.
-      If you are unsure if a link is still live, do not include it.
+      Do NOT provide dead links or generic homepages. EVERY link must point to a specific, active article.
+      
+      PERFORMANCE METRIC: Generate concise, direct summaries. Keep responses compact to maximize throughput and guarantee ultra-fast results.
       
       JSON OUTPUT FORMAT:
       {
@@ -297,7 +298,7 @@ export class PulserAgent {
         "summary": "Detailed narrative covering catalysts and trends.",
         "currentPrice": "Price (e.g., 150.50 or 50000.00)",
         "currencySymbol": "Currency (e.g., $ or ₹)",
-        "sources": [{"title": "Headline or Site", "url": "DIRECT_URL"}],
+        "sources": [{"title": "Headline or site", "url": "DIRECT_URL"}],
         "snapshot": {
           "intrinsicValue": "Value",
           "cmp": "Current Market Price",

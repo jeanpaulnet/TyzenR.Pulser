@@ -539,7 +539,7 @@ const App: React.FC = () => {
           }
         };
       });
-    }, 2500);
+    }, 1250);
 
     try {
       const result = await pulser.analyzeSymbol(symbol);
