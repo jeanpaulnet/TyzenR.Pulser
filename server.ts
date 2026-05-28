@@ -124,8 +124,11 @@ async function startServer() {
         delete cleanConfig.generationConfig;
       }
       
+      // Prioritize gemini-2.5-flash as it is highly stable and has active quota
       const modelsToTry = [model];
-      if (model !== "gemini-2.5-flash") {
+      if (model === "gemini-3.5-flash" || model === "gemini-flash-latest") {
+        modelsToTry.unshift("gemini-2.5-flash");
+      } else if (model !== "gemini-2.5-flash") {
         modelsToTry.push("gemini-2.5-flash");
       }
 
