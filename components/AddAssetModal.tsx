@@ -332,7 +332,7 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
                   <Loader2 className="w-4 h-4 animate-spin" /> Verifying Group...
                 </>
               ) : (
-                columns.every(c => c.isFromSuggestion) ? 'Add All Symbols' : 'Verify & Add Symbols'
+                columns.length > 1 ? 'Add Symbols' : 'Add Symbol'
               )}
             </button>
           </div>
