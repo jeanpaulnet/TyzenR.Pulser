@@ -114,13 +114,20 @@ async function startServer() {
   // Proxy Gemini calls to keep API key safe
   app.post("/api/ai/generate", async (req, res) => {
     try {
-      const { prompt, config, model = "gemini-3.5-flash" } = req.body;
+      const { prompt, config = {}, model = "gemini-3.5-flash" } = req.body;
       const genAI = getGenAI();
+      
+      // Failsafe: if client passed nested generationConfig, flatten it for the SDK
+      const cleanConfig = { ...config };
+      if (cleanConfig.generationConfig) {
+        Object.assign(cleanConfig, cleanConfig.generationConfig);
+        delete cleanConfig.generationConfig;
+      }
       
       const response = await genAI.models.generateContent({
         model: model,
         contents: prompt,
-        config: config
+        config: cleanConfig
       });
       
       res.json({ text: response.text, candidates: response.candidates });

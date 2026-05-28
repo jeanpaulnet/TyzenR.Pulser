@@ -25,11 +25,31 @@ export class PulserAgent {
         const contents = [{ parts: [{ text: prompt }] }];
         const body: any = { contents };
         
+        // Translate modern flat SDK config to REST API nested style if needed
+        const generationConfig: any = {};
+        if (config?.responseMimeType) generationConfig.responseMimeType = config.responseMimeType;
+        if (config?.responseSchema) generationConfig.responseSchema = config.responseSchema;
+        if (config?.temperature !== undefined) generationConfig.temperature = config.temperature;
+        if (config?.topP !== undefined) generationConfig.topP = config.topP;
+        if (config?.topK !== undefined) generationConfig.topK = config.topK;
+        if (config?.maxOutputTokens !== undefined) generationConfig.maxOutputTokens = config.maxOutputTokens;
+        
         if (config?.generationConfig) {
-          body.generationConfig = config.generationConfig;
+          Object.assign(generationConfig, config.generationConfig);
         }
+
+        if (Object.keys(generationConfig).length > 0) {
+          body.generationConfig = generationConfig;
+        }
+
         if (config?.tools) {
           body.tools = config.tools;
+        }
+
+        if (config?.systemInstruction) {
+          body.systemInstruction = {
+            parts: [{ text: config.systemInstruction }]
+          };
         }
 
         const response = await fetch(url, {
@@ -112,7 +132,7 @@ export class PulserAgent {
       CRITICAL: Use exact tickers (e.g., AAPL, MSFT, RELIANCE.NS, BTC). Use the .NS suffix for Indian NSE stocks.`;
 
       const response = await this.callAi(prompt, {
-        generationConfig: { responseMimeType: "application/json" }
+        responseMimeType: "application/json"
       });
 
       const text = response.text || "";
