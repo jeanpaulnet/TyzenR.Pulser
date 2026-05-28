@@ -121,6 +121,15 @@ const App: React.FC = () => {
     return saved === 'true';
   });
 
+  const [concurrencyLimit, setConcurrencyLimit] = useState<number>(() => {
+    const saved = localStorage.getItem('pulser_concurrency_threads');
+    return saved ? parseInt(saved, 10) : 4;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('pulser_concurrency_threads', concurrencyLimit.toString());
+  }, [concurrencyLimit]);
+
   useEffect(() => {
     localStorage.setItem('pulser_sidebar_collapsed', isSidebarCollapsed.toString());
   }, [isSidebarCollapsed]);
@@ -452,7 +461,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleAnalyze = useCallback(async (symbol: MarketSymbol) => {
+  const handleAnalyze = useCallback(async (symbol: MarketSymbol, threadId?: number) => {
     // Re-read balances at start of each individual scan to ensure up-to-date data
     const currentBalances = JSON.parse(localStorage.getItem('pulser_balances') || '{}');
     const ipKey = `ip_${userIp}`;
@@ -499,6 +508,7 @@ const App: React.FC = () => {
 
     // Rotate status messages every 2.5 seconds
     let statusIndex = Math.floor(Math.random() * PROGRESS_STATUSES.length);
+    const assignedThread = threadId || Math.floor(Math.random() * concurrencyLimit) + 1;
     
     setState(prev => ({
       ...prev,
@@ -507,7 +517,8 @@ const App: React.FC = () => {
         [symbol.id]: { 
           ...(prev.analyses[symbol.id] || {}), 
           isAnalyzing: true,
-          status: PROGRESS_STATUSES[statusIndex]
+          status: PROGRESS_STATUSES[statusIndex],
+          threadId: assignedThread
         } as PulserAnalysis
       }
     }));
@@ -556,7 +567,7 @@ const App: React.FC = () => {
         }
       }));
     }
-  }, [user, userIp]);
+  }, [user, userIp, concurrencyLimit]);
 
   const handleRefreshPrice = useCallback(async (symbol: MarketSymbol) => {
     try {
@@ -579,7 +590,47 @@ const App: React.FC = () => {
   }, []);
 
   const handleScanAll = async () => {
-    await Promise.all(state.symbols.map(symbol => handleAnalyze(symbol)));
+    const symbols = state.symbols;
+    if (symbols.length === 0) return;
+
+    // Track active threads
+    const activeThreadsSet = new Set<number>();
+    
+    // Helper to request a thread ID then run the analysis
+    const runTaskOnThread = async (symbol: MarketSymbol) => {
+      // Find lowest available thread ID
+      let assignedThread = 1;
+      for (let i = 1; i <= concurrencyLimit; i++) {
+        if (!activeThreadsSet.has(i)) {
+          assignedThread = i;
+          break;
+        }
+      }
+      activeThreadsSet.add(assignedThread);
+
+      try {
+        await handleAnalyze(symbol, assignedThread);
+      } finally {
+        activeThreadsSet.delete(assignedThread);
+      }
+    };
+
+    // Parallel queue implementation with concurrency limit (Multi-threading simulator)
+    const queue = [...symbols];
+    const activePromises: Promise<void>[] = [];
+    
+    while (queue.length > 0) {
+      if (activePromises.length < concurrencyLimit) {
+        const nextSymbol = queue.shift()!;
+        const p = runTaskOnThread(nextSymbol).then(() => {
+          activePromises.splice(activePromises.indexOf(p), 1);
+        });
+        activePromises.push(p);
+      } else {
+        await Promise.race(activePromises);
+      }
+    }
+    await Promise.all(activePromises);
   };
 
   const handleAddSymbol = (symbol: MarketSymbol) => {
@@ -823,6 +874,31 @@ const App: React.FC = () => {
                 <LogIn className="w-4 h-4" /> Login
               </button>
             )}
+
+            <div className="flex items-center gap-2">
+              <label 
+                htmlFor="thread-select"
+                className={`hidden md:inline text-[10px] font-black uppercase tracking-wider ${theme === 'dark' ? 'text-slate-500' : 'text-purple-600/70'}`}
+              >
+                Threads:
+              </label>
+              <select
+                id="thread-select"
+                value={concurrencyLimit}
+                onChange={(e) => setConcurrencyLimit(Number(e.target.value))}
+                className={`px-3 py-2 rounded-full text-xs font-bold border transition-all cursor-pointer outline-none focus:ring-1 ${
+                  theme === 'dark'
+                    ? 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-900 focus:ring-emerald-500'
+                    : 'bg-white border-purple-200 text-purple-700 hover:bg-purple-50/50 focus:ring-purple-500'
+                }`}
+              >
+                <option value={1}>1 Thread</option>
+                <option value={2}>2 Threads</option>
+                <option value={4}>4 Threads</option>
+                <option value={8}>8 Threads</option>
+                <option value={16}>Turbo (MAX)</option>
+              </select>
+            </div>
 
             <button 
               onClick={handleScanAll}

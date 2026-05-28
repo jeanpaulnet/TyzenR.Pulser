@@ -98,13 +98,8 @@ export class PulserAgent {
         errorMsg = error.error || errorMsg;
       } catch (e) {}
 
-      // If a 404 occurs, we are likely on a static host that doesn't route /api or support the custom server container
-      if (response.status === 404) {
-        console.warn('Backend API returned 404. Initiating direct client-side fallback query...');
-        return await this.callAiDirectFallback(prompt, config, model);
-      }
-
-      throw new Error(errorMsg);
+      console.warn(`Backend API returned error ${response.status}: ${errorMsg}. Initiating fallback query...`);
+      return await this.callAiDirectFallback(prompt, config, model);
     } catch (error: any) {
       console.error('Call AI backend server request failed, attempting direct fallback...', error);
       try {

@@ -35,6 +35,7 @@ export interface PulserAnalysis {
   status?: string;
   currentPrice?: string;
   currencySymbol?: string;
+  threadId?: number;
   // Snapshot Data
   snapshot?: {
     intrinsicValue?: string;

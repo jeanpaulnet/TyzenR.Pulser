@@ -37,7 +37,7 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
       setActiveStep(0);
       const interval = setInterval(() => {
         setActiveStep(prev => prev + 1);
-      }, 1500); // 1.5 seconds per time slice
+      }, 4000); // 4.0 seconds per time slice (slower blinking/switching)
       return () => clearInterval(interval);
     } else {
       setActiveStep(-1);
@@ -403,6 +403,13 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
                 {isAnalyzing ? (analysis?.status || 'Synthesizing Markets') : 'Click Refresh to start AI Engine'}
               </p>
               {isAnalyzing && !analysis?.status && <p className="text-[9px] text-slate-500 dark:text-slate-700 mt-1 mb-3">Checking Reuters, Bloomberg, WSJ...</p>}
+              
+              {isAnalyzing && (
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-2.5 rounded-full text-[8.5px] font-black uppercase tracking-wider bg-violet-100/60 dark:bg-violet-950/40 text-violet-600 dark:text-violet-450 border border-violet-200/50 dark:border-violet-900/60 animate-pulse">
+                  <Fingerprint className="w-3 h-3 animate-spin shrink-0 text-violet-500 dark:text-violet-400" />
+                  Thread {analysis?.threadId ? `#${analysis.threadId.toString().padStart(2, '0')}` : '#01'} Active
+                </div>
+              )}
               
               {isAnalyzing && (
                 <div className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">

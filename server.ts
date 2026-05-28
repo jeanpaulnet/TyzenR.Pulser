@@ -124,13 +124,29 @@ async function startServer() {
         delete cleanConfig.generationConfig;
       }
       
-      const response = await genAI.models.generateContent({
-        model: model,
-        contents: prompt,
-        config: cleanConfig
-      });
+      const modelsToTry = [model];
+      if (model !== "gemini-2.5-flash") {
+        modelsToTry.push("gemini-2.5-flash");
+      }
+
+      let lastError: any = null;
+      for (const currentModel of modelsToTry) {
+        try {
+          console.log(`Analyzing market data with model: ${currentModel}`);
+          const response = await genAI.models.generateContent({
+            model: currentModel,
+            contents: prompt,
+            config: cleanConfig
+          });
+          
+          return res.json({ text: response.text, candidates: response.candidates });
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`Model query with ${currentModel} failed:`, err.message || err);
+        }
+      }
       
-      res.json({ text: response.text, candidates: response.candidates });
+      throw lastError || new Error("All proxy API model attempts failed.");
     } catch (error: any) {
       console.error("AI API Error:", error);
       res.status(500).json({ error: error.message });
