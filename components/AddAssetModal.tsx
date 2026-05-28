@@ -468,7 +468,7 @@ const SymbolColumnPanel: React.FC<{
       onUpdate(id, { isSearching: true });
       try {
         const apiType = getAPIWordFromType();
-        const url = `https://webapi.tyzenr.com/alerts/search/${apiType}/symbol?query=${encodeURIComponent(trimmed)}&q=${encodeURIComponent(trimmed)}&symbol=${encodeURIComponent(trimmed)}`;
+        const url = `https://webapi.tyzenr.com/alerts/search/${apiType}/${encodeURIComponent(trimmed)}`;
         
         let results: { symbol: string; name: string; type: MarketType }[] = [];
         try {
