@@ -315,14 +315,14 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 text-xs rounded-xl border border-slate-250 dark:border-slate-800 font-extrabold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-colors uppercase tracking-widest cursor-pointer"
+              className="px-4 py-2.5 text-xs rounded-xl border border-slate-250 dark:border-slate-800 font-extrabold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900/50 transition-colors uppercase tracking-widest cursor-pointer ml-auto"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={globalValidating}
-              className={`flex-1 px-4 py-2.5 text-xs rounded-xl font-black text-white disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-2 uppercase tracking-widest transition-all ${
+              className={`w-1/2 px-4 py-2.5 text-xs rounded-xl font-black text-white disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-2 uppercase tracking-widest transition-all ${
                 columns.every(c => c.isFromSuggestion) 
                   ? 'bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-500/10' 
                   : 'bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-500/10'
@@ -484,20 +484,7 @@ const SymbolColumnPanel: React.FC<{
             }
           }
         } catch (apiErr) {
-          console.warn('Alerts API fetch failed, falling back to AI suggest:', apiErr);
-        }
-
-        // AI-based backup suggestions if API results were empty or failed
-        if (results.length === 0) {
-          try {
-            const aiResults = await pulser.searchSuggestions(trimmed, region);
-            results = aiResults.map(r => ({
-              ...r,
-              type: (r.type as string) === 'INDIAN_STOCKS' || (r.type as string) === 'US_STOCKS' ? MarketType.STOCK : r.type as MarketType
-            }));
-          } catch (aiErr) {
-            console.error('AI suggestions lookup failed:', aiErr);
-          }
+          console.warn('Alerts API fetch failed:', apiErr);
         }
 
         const currentLocal = searchLocalSymbols(trimmed, region);
