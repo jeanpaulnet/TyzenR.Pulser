@@ -82,12 +82,13 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
     setColumns(prev => prev.map(col => col.id === id ? { ...col, ...fields } : col));
   };
 
-  const handleSymbolSelect = (id: string, argSugg: { symbol: string; name: string; type: MarketType }) => {
+  const handleSymbolSelect = (id: string, argSugg: { symbol: string; name: string; type: MarketType; region?: 'US' | 'INDIA' | 'GLOBAL' }) => {
     setColumns(prev => prev.map(col => col.id === id ? {
       ...col,
       symbol: argSugg.symbol,
       companyName: argSugg.name,
       type: argSugg.type,
+      region: argSugg.region || col.region,
       searchSuggestions: [],
       isFromSuggestion: true,
       error: null
@@ -349,7 +350,7 @@ const SymbolColumnPanel: React.FC<{
   totalColumns: number;
   onUpdate: (id: string, fields: Partial<FormColumn>) => void;
   onRemove: (id: string) => void;
-  onSymbolSelect: (id: string, suggestion: { symbol: string; name: string; type: MarketType }) => void;
+  onSymbolSelect: (id: string, suggestion: { symbol: string; name: string; type: MarketType; region?: 'US' | 'INDIA' | 'GLOBAL' }) => void;
 }> = ({ column, index, totalColumns, onUpdate, onRemove, onSymbolSelect }) => {
   const {
     id,
@@ -368,6 +369,46 @@ const SymbolColumnPanel: React.FC<{
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const getCurrentTypeValue = () => {
+    if (type === MarketType.STOCK) {
+      if (region === 'INDIA') return 'INDIA_STOCK';
+      return 'AMERICA_STOCK';
+    }
+    return type; // 'CRYPTO' | 'COMMODITY' | 'INDEX'
+  };
+
+  const getAPIWordFromType = () => {
+    const currentVal = getCurrentTypeValue();
+    if (currentVal === 'AMERICA_STOCK') return 'america';
+    if (currentVal === 'INDIA_STOCK') return 'india';
+    return currentVal.toLowerCase(); // 'crypto' | 'commodity' | 'index'
+  };
+
+  const handleTypeSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    let newType = MarketType.STOCK;
+    let newRegion: 'US' | 'INDIA' | 'GLOBAL' = 'US';
+
+    if (val === 'AMERICA_STOCK') {
+      newType = MarketType.STOCK;
+      newRegion = 'US';
+    } else if (val === 'INDIA_STOCK') {
+      newType = MarketType.STOCK;
+      newRegion = 'INDIA';
+    } else if (val === 'CRYPTO') {
+      newType = MarketType.CRYPTO;
+      newRegion = 'GLOBAL';
+    } else if (val === 'COMMODITY') {
+      newType = MarketType.COMMODITY;
+      newRegion = 'GLOBAL';
+    } else if (val === 'INDEX') {
+      newType = MarketType.INDEX;
+      newRegion = 'GLOBAL';
+    }
+
+    onUpdate(id, { type: newType, region: newRegion, error: null });
+  };
 
   // 1. Instant local search match mapping
   useEffect(() => {
@@ -426,7 +467,38 @@ const SymbolColumnPanel: React.FC<{
     const timer = setTimeout(async () => {
       onUpdate(id, { isSearching: true });
       try {
-        const results = await pulser.searchSuggestions(trimmed, region);
+        const apiType = getAPIWordFromType();
+        const url = `https://webapi.tyzenr.com/alerts/search/${apiType}/symbol?query=${encodeURIComponent(trimmed)}&q=${encodeURIComponent(trimmed)}&symbol=${encodeURIComponent(trimmed)}`;
+        
+        let results: { symbol: string; name: string; type: MarketType }[] = [];
+        try {
+          const response = await fetch(url);
+          if (response.ok) {
+            const data = await response.json();
+            if (Array.isArray(data)) {
+              results = data.map((item: any) => ({
+                symbol: (item.symbol || item.ticker || item.id || '').toUpperCase(),
+                name: item.name || item.title || item.companyName || item.description || '',
+                type: type
+              }));
+            }
+          }
+        } catch (apiErr) {
+          console.warn('Alerts API fetch failed, falling back to AI suggest:', apiErr);
+        }
+
+        // AI-based backup suggestions if API results were empty or failed
+        if (results.length === 0) {
+          try {
+            const aiResults = await pulser.searchSuggestions(trimmed, region);
+            results = aiResults.map(r => ({
+              ...r,
+              type: (r.type as string) === 'INDIAN_STOCKS' || (r.type as string) === 'US_STOCKS' ? MarketType.STOCK : r.type as MarketType
+            }));
+          } catch (aiErr) {
+            console.error('AI suggestions lookup failed:', aiErr);
+          }
+        }
 
         const currentLocal = searchLocalSymbols(trimmed, region);
         const merged = [...currentLocal];
@@ -459,7 +531,7 @@ const SymbolColumnPanel: React.FC<{
     }, 450);
 
     return () => clearTimeout(timer);
-  }, [symbol, region]);
+  }, [symbol, region, type]);
 
   return (
     <div 
@@ -493,7 +565,7 @@ const SymbolColumnPanel: React.FC<{
         )}
 
         <div className="relative" ref={containerRef}>
-          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Market Ticker</label>
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Symbol</label>
           <div className="relative">
             <input
               ref={inputRef}
@@ -583,33 +655,20 @@ const SymbolColumnPanel: React.FC<{
           )}
         </div>
 
-        {/* Type & Region Select */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Type</label>
-            <select 
-              value={type}
-              onChange={(e) => onUpdate(id, { type: e.target.value as MarketType })}
-              className="w-full bg-slate-100/30 dark:bg-slate-800 border border-slate-205 dark:border-slate-700 rounded-lg px-2 py-2 text-xs font-bold focus:outline-none text-slate-800 dark:text-white appearance-none cursor-pointer"
-            >
-              <option value={MarketType.STOCK}>Stock</option>
-              <option value={MarketType.CRYPTO}>Crypto</option>
-              <option value={MarketType.COMMODITY}>Commodity</option>
-              <option value={MarketType.INDEX}>Index</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Region</label>
-            <select 
-              value={region}
-              onChange={(e) => onUpdate(id, { region: e.target.value as any })}
-              className="w-full bg-slate-100/30 dark:bg-slate-800 border border-slate-205 dark:border-slate-700 rounded-lg px-2 py-2 text-xs font-bold focus:outline-none text-slate-800 dark:text-white appearance-none cursor-pointer"
-            >
-              <option value="US">USA</option>
-              <option value="INDIA">India</option>
-              <option value="GLOBAL">Global</option>
-            </select>
-          </div>
+        {/* Type Select */}
+        <div>
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Type</label>
+          <select 
+            value={getCurrentTypeValue()}
+            onChange={handleTypeSelectChange}
+            className="w-full bg-slate-100/30 dark:bg-slate-800 border border-slate-205 dark:border-slate-700 rounded-lg px-2 py-2 text-xs font-bold focus:outline-none text-slate-800 dark:text-white appearance-none cursor-pointer"
+          >
+            <option value="AMERICA_STOCK">America Stock</option>
+            <option value="INDIA_STOCK">India Stock</option>
+            <option value="CRYPTO">Crypto</option>
+            <option value="COMMODITY">Commodity</option>
+            <option value="INDEX">Index</option>
+          </select>
         </div>
 
         {region === 'INDIA' && (

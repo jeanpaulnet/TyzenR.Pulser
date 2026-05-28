@@ -12,6 +12,116 @@ interface SnapshotModalProps {
   onRefresh: () => void;
 }
 
+interface PriceChartProps {
+  analysis?: PulserAnalysis;
+  theme: 'light' | 'dark';
+  symbol: MarketSymbol;
+}
+
+const PriceChart: React.FC<PriceChartProps> = ({ analysis, theme, symbol }) => {
+  const [range, setRange] = React.useState<'1M' | '1Y' | '5Y'>('1Y');
+  const historicalData = React.useMemo(() => {
+    const data = analysis?.snapshot?.historicalData?.[range] || [];
+    return [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [analysis, range]);
+
+  const ranges: { label: string; value: '1M' | '1Y' | '5Y' }[] = [
+    { label: '1M', value: '1M' },
+    { label: '1Y', value: '1Y' },
+    { label: '5Y', value: '5Y' }
+  ];
+
+  const currencySymbol = analysis?.currencySymbol || (symbol.region === 'INDIA' ? '₹' : '$');
+
+  return (
+    <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-500">
+            <TrendingUp className="w-4 h-4" />
+          </div>
+          <h3 className="font-bold text-slate-800 dark:text-slate-200">Price Chart</h3>
+        </div>
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+          {ranges.map(r => (
+            <button
+              key={r.value}
+              onClick={() => setRange(r.value)}
+              className={`px-3 py-1 rounded-lg text-[10px] font-black tracking-widest transition-all ${
+                range === r.value 
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="h-[150px] w-full">
+        {historicalData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={historicalData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? "rgba(71, 85, 105, 0.2)" : "rgba(226, 232, 240, 0.5)"} />
+              <XAxis 
+                dataKey="date" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 'bold' }}
+                tickFormatter={(val) => {
+                  const date = new Date(val);
+                  if (range === '1M') return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                  return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                }}
+                minTickGap={30}
+              />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 'bold' }}
+                domain={['auto', 'auto']}
+                tickFormatter={(val) => `${currencySymbol}${val.toLocaleString()}`}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: theme === 'dark' ? '#1e293b' : '#fff', 
+                  border: 'none', 
+                  borderRadius: '12px', 
+                  color: theme === 'dark' ? '#fff' : '#1e293b',
+                  fontSize: '11px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                }}
+                formatter={(value: any) => [`${currencySymbol}${value.toLocaleString()}`, 'Price']}
+                labelFormatter={(label) => new Date(label).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="price" 
+                stroke="#6366f1" 
+                strokeWidth={2}
+                fillOpacity={1} 
+                fill="url(#colorPrice)" 
+                animationDuration={1500}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-slate-400 text-xs gap-2">
+            <Activity className="w-8 h-8 opacity-20 animate-pulse" />
+            <p className="italic opacity-60">Syncing historical Google Finance data...</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose, onRefresh }) => {
   const snapshot = analysis?.snapshot;
 
@@ -118,110 +228,6 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
 
   const isDarkMode = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   const theme = isDarkMode ? 'dark' : 'light';
-
-  const PriceChart: React.FC<{ analysis?: PulserAnalysis; theme: 'light' | 'dark' }> = ({ analysis, theme }) => {
-    const [range, setRange] = React.useState<'1M' | '1Y' | '5Y'>('1Y');
-    const historicalData = React.useMemo(() => {
-      const data = analysis?.snapshot?.historicalData?.[range] || [];
-      return [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    }, [analysis, range]);
-
-    const ranges: { label: string; value: '1M' | '1Y' | '5Y' }[] = [
-      { label: '1M', value: '1M' },
-      { label: '1Y', value: '1Y' },
-      { label: '5Y', value: '5Y' }
-    ];
-
-    const currencySymbol = analysis?.currencySymbol || (symbol.region === 'INDIA' ? '₹' : '$');
-
-    return (
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-500">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-            <h3 className="font-bold text-slate-800 dark:text-slate-200">Price Chart</h3>
-          </div>
-          <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-            {ranges.map(r => (
-              <button
-                key={r.value}
-                onClick={() => setRange(r.value)}
-                className={`px-3 py-1 rounded-lg text-[10px] font-black tracking-widest transition-all ${
-                  range === r.value 
-                    ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
-                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                }`}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="h-[150px] w-full">
-          {historicalData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={historicalData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === 'dark' ? "rgba(71, 85, 105, 0.2)" : "rgba(226, 232, 240, 0.5)"} />
-                <XAxis 
-                  dataKey="date" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 'bold' }}
-                  tickFormatter={(val) => {
-                    const date = new Date(val);
-                    if (range === '1M') return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-                    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-                  }}
-                  minTickGap={30}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 'bold' }}
-                  domain={['auto', 'auto']}
-                  tickFormatter={(val) => `${currencySymbol}${val.toLocaleString()}`}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: theme === 'dark' ? '#1e293b' : '#fff', 
-                    border: 'none', 
-                    borderRadius: '12px', 
-                    color: theme === 'dark' ? '#fff' : '#1e293b',
-                    fontSize: '11px',
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                  }}
-                  formatter={(value: any) => [`${currencySymbol}${value.toLocaleString()}`, 'Price']}
-                  labelFormatter={(label) => new Date(label).toLocaleDateString('en-US', { dateStyle: 'medium' })}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="price" 
-                  stroke="#6366f1" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorPrice)" 
-                  animationDuration={1500}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-slate-400 text-xs gap-2">
-              <Activity className="w-8 h-8 opacity-20 animate-pulse" />
-              <p className="italic opacity-60">Syncing historical Google Finance data...</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   const getRatingColor = (rating: string) => {
     const r = rating.toLowerCase();
@@ -485,7 +491,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
             {/* Column 2 */}
             <div className="space-y-6">
               {/* Price Chart */}
-              <PriceChart analysis={analysis} theme={theme} />
+              <PriceChart analysis={analysis} theme={theme} symbol={symbol} />
 
               {/* Growth Chart with bars */}
               <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-auto lg:min-h-[180px]">
