@@ -19,12 +19,51 @@ function getStripe() {
   return stripe;
 }
 
-// Gemini Helper (Server-side)
-const getGenAI = () => {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error("GEMINI_API_KEY is missing");
+// Gemini Helper (Server-side) with dynamic Tyzenr retrieval
+let cachedGeminiKey: string | null = null;
+let keyCacheTime: number = 0;
+
+async function getGeminiApiKey(): Promise<string> {
+  const now = Date.now();
+  // Cache the key for 10 minutes to avoid spamming the endpoint
+  if (cachedGeminiKey && (now - keyCacheTime < 10 * 60 * 1000)) {
+    return cachedGeminiKey;
+  }
+
+  try {
+    const res = await fetch("https://webapi.tyzenr.com/keys/gemini", {
+      headers: {
+        "Referer": "https://pulser.tyzenr.com/"
+      }
+    });
+    if (res.ok) {
+      const text = await res.text();
+      const trimmed = text.trim();
+      if (trimmed && trimmed !== "Invalid Client!" && !trimmed.includes("<html")) {
+        cachedGeminiKey = trimmed;
+        keyCacheTime = now;
+        console.log("Successfully fetched fresh Gemini API Key dynamically from webapi.tyzenr.com");
+        return trimmed;
+      } else {
+        console.warn(`Dynamic Gemini key response invalid/expired: "${trimmed}". Falling back...`);
+      }
+    } else {
+      console.warn(`Dynamic Gemini key retrieval status: ${res.status}. Falling back...`);
+    }
+  } catch (err: any) {
+    console.warn("Failed to fetch dynamic Gemini key, falling back to local environment...", err.message || err);
+  }
+
+  const envKey = process.env.GEMINI_API_KEY;
+  if (!envKey) {
+    throw new Error("Unable to obtain Gemini API Key from either Tyzenr endpoint or local environment variables.");
+  }
+  return envKey;
+}
+
+const getGenAI = (apiKey: string) => {
   return new GoogleGenAI({ 
-    apiKey: key,
+    apiKey: apiKey,
     httpOptions: {
       headers: {
         'User-Agent': 'aistudio-build'
@@ -115,7 +154,8 @@ async function startServer() {
   app.post("/api/ai/generate", async (req, res) => {
     try {
       const { prompt, config = {}, model = "gemini-3.5-flash" } = req.body;
-      const genAI = getGenAI();
+      const apiKey = await getGeminiApiKey();
+      const genAI = getGenAI(apiKey);
       
       // Failsafe: if client passed nested generationConfig, flatten it for the SDK
       const cleanConfig = { ...config };

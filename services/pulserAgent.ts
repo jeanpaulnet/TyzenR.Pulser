@@ -7,9 +7,29 @@ declare const process: any;
 
 export class PulserAgent {
   private async callAiDirectFallback(prompt: string, config: any = {}, model: string = "gemini-2.5-flash"): Promise<any> {
-    const apiKey = (process.env as any).GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+    let apiKey = (process.env as any).GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+    
+    // Always attempt dynamic core key retrieval first to prevent expired API key issues
+    try {
+      const res = await fetch("https://webapi.tyzenr.com/keys/gemini", {
+        headers: {
+          "Referer": "https://pulser.tyzenr.com/"
+        }
+      });
+      if (res.ok) {
+        const text = await res.text();
+        const trimmed = text.trim();
+        if (trimmed && trimmed !== "Invalid Client!" && !trimmed.includes("<html")) {
+          apiKey = trimmed;
+          console.log("Client-side fallback dynamically obtained a fresh Gemini API Key from Tyzenr.");
+        }
+      }
+    } catch (e) {
+      console.warn("Client fallback key fetch from webapi.tyzenr.com failed, resorting to environments:", e);
+    }
+
     if (!apiKey) {
-      throw new Error("Client-side fallback GEMINI_API_KEY is not configured.");
+      throw new Error("Client-side fallback GEMINI_API_KEY could not be retrieved dynamically or via environment config.");
     }
 
     // Attempt the requested model first. If it looks like an internal/experimental candidate,
