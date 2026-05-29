@@ -64,7 +64,7 @@ export interface PulserAnalysis {
     employees?: string;
     peers?: { name: string; pe: string; marketCap: string; pb?: string; cmp?: string }[];
     peerComparison?: string;
-    analystViews?: { firm: string; rating: string; targetPrice: string; date: string }[];
+    analystViews?: { firm: string; rating: string; targetPrice: string; date: string; url?: string }[];
     news?: { title: string; url: string; date: string }[];
     historicalData?: {
       "1M"?: { date: string; price: number }[];

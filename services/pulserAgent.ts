@@ -283,7 +283,7 @@ export class PulserAgent {
       
       CRITICAL: For "historicalData", use Google Finance search results to provide 6-8 key spaced-out data points for each period: 1 Month (1M), 1 Year (1Y), and 5 Years (5Y). This is optimized for fast parsing and smooth rendering.
       
-      CRITICAL: For "analystViews", find 2-3 of the most RECENT ratings (Buy/Sell/Hold) and price targets.
+      CRITICAL: For "analystViews", find 2-3 of the most RECENT ratings (Buy/Sell/Hold), price targets, and the direct source URL or a reputable coverage article URL. If a specific source URL isn't found, find a financial news URL covering the rating.
       
       URL POLICY: All URLs in your response MUST be verifiable, live article links found in your search results. 
       Do NOT provide dead links or generic homepages. EVERY link must point to a specific, active article.
@@ -323,7 +323,7 @@ export class PulserAgent {
           "employees": "Count",
           "peers": [{"name": "Peer", "pe": "PE Ratio", "marketCap": "Market Cap", "pb": "PB Ratio", "cmp": "Current Price"}],
           "peerComparison": "Detailed paragraph comparing the company's valuation (PE/PB) and performance against these specific peers. Ensure CMP and Market Cap use real, current values. CRITICAL: For 'peers', you MUST conduct a specific search for the current real-time stock price (CMP), PE Ratio, Market Cap, and PB Ratio for each peer listed. Do NOT use placeholder values; the data MUST reflect the absolute latest available metrics from today's market session.",
-          "analystViews": [{"firm": "Morningstar/Goldman", "rating": "Buy/Outperform", "targetPrice": "Price", "date": "Date"}],
+          "analystViews": [{"firm": "Morningstar/Goldman", "rating": "Buy/Outperform", "targetPrice": "Price", "date": "Date", "url": "ARTICLE_OR_REPORT_URL"}],
           "expansionPlans": [{"plan": "Strategic point", "date": "Estimated timeline, e.g., Q4 2024"}],
           "growthData": [{"year": "2023", "revenue": 100.5, "profit": 15.2, "growth": 10.5}],
           "historicalData": {
@@ -498,7 +498,8 @@ export class PulserAgent {
           ma50: this.sanitizePrice(data.snapshot?.ma50 || ""),
           analystViews: (data.snapshot?.analystViews || []).map((v: any) => ({
             ...v,
-            targetPrice: this.sanitizePrice(v.targetPrice || "")
+            targetPrice: this.sanitizePrice(v.targetPrice || ""),
+            url: typeof v.url === 'string' ? v.url : undefined
           })),
           marketCap: this.sanitizePrice(data.snapshot?.marketCap || data.marketCap || '—'),
           peers: sanitizedPeers,

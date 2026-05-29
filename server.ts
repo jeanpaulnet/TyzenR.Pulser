@@ -196,6 +196,89 @@ async function startServer() {
     }
   });
 
+  // Memory cache for TipRanks check
+  const tipranksCache = new Map<string, boolean>();
+
+  app.get("/api/check-url", async (req, res) => {
+    try {
+      const targetUrl = req.query.url as string;
+      if (!targetUrl) {
+        return res.status(400).json({ error: "Missing url parameter" });
+      }
+
+      // Check if it's TipRanks
+      if (targetUrl.includes("tipranks.com")) {
+        // Extract symbol from path, e.g. /stocks/TSLA/forecast or similar
+        const match = targetUrl.match(/stocks\/([A-Za-z0-9\.\-]+)\/forecast/i) || targetUrl.match(/stocks\/([A-Za-z0-9\.\-]+)/i);
+        const symbol = match ? match[1].toUpperCase() : null;
+        
+        if (symbol) {
+          // Check cache first
+          if (tipranksCache.has(symbol)) {
+            const exists = tipranksCache.get(symbol);
+            return res.json({ exists, is404: !exists });
+          }
+
+          try {
+            const apiKey = await getGeminiApiKey();
+            const genAI = getGenAI(apiKey);
+            
+            const response = await genAI.models.generateContent({
+              model: "gemini-2.5-flash",
+              contents: `Check if the website link 'https://www.tipranks.com/stocks/${symbol}/forecast' exists and is a valid active forecast page on TipRanks, or if it is a 404 error page. Reply with ONLY the word TRUE if it is valid/exists, or FALSE if it is a 404/invalid. Do not output anything else.`,
+              config: {
+                tools: [{ googleSearch: {} }]
+              }
+            });
+
+            const text = response.text?.trim() || "FALSE";
+            const exists = text.toUpperCase().includes("TRUE");
+            tipranksCache.set(symbol, exists);
+            
+            console.log(`TipRanks coverage check for ${symbol}: ${exists} (from Gemini search grounding)`);
+            return res.json({ exists, is404: !exists });
+          } catch (err: any) {
+            console.warn(`TipRanks Gemini-grounded check failed for ${symbol}:`, err.message || err);
+            // Default to true for standard stocks, false otherwise
+            const looksLikeCryptoOrIndex = symbol.includes("USD") || symbol.includes("INR") || symbol === "BTC" || symbol === "ETH";
+            const exists = !looksLikeCryptoOrIndex;
+            return res.json({ exists, is404: !exists, error: err.message });
+          }
+        }
+      }
+
+      // Standard non-TipRanks URLs check
+      try {
+        const urlResponse = await fetch(targetUrl, {
+          method: "HEAD",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          }
+        });
+        
+        let status = urlResponse.status;
+        if (status === 405 || status >= 500) {
+          const getResponse = await fetch(targetUrl, {
+            method: "GET",
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            }
+          });
+          status = getResponse.status;
+        }
+
+        const is404 = status === 404;
+        return res.json({ exists: !is404, status, is404 });
+      } catch (err: any) {
+        console.warn(`Standard URL checking failed for ${targetUrl}:`, err.message || err);
+        return res.json({ exists: false, is404: true, error: err.message });
+      }
+    } catch (error: any) {
+      console.error("Route check-url error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

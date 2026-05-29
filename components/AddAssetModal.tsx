@@ -105,10 +105,17 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
     let hasErrors = false;
     const updatedColumns = [...columns];
 
-    // 0. Auto-resolve local matches based on company name keyword or symbol name
+    // 0. Automatically add .NS suffix if India Stock & no dot is present, and then auto-resolve
     for (let i = 0; i < updatedColumns.length; i++) {
       const col = updatedColumns[i];
-      const trimmedSymbol = col.symbol.trim();
+      let trimmedSymbol = col.symbol.trim();
+
+      if (col.type === MarketType.STOCK && col.region === 'INDIA') {
+        if (trimmedSymbol && !trimmedSymbol.includes('.')) {
+          trimmedSymbol = trimmedSymbol + '.NS';
+          col.symbol = trimmedSymbol; // update the input value so user can see it too
+        }
+      }
 
       if (trimmedSymbol && !col.isFromSuggestion) {
         const localMatches = searchLocalSymbols(trimmedSymbol, col.region);
@@ -407,7 +414,16 @@ const SymbolColumnPanel: React.FC<{
       newRegion = 'GLOBAL';
     }
 
-    onUpdate(id, { type: newType, region: newRegion, error: null });
+    // Automatically append .NS if they switched to/are choosing an Indian stock
+    let updatedSymbol = symbol;
+    if (newType === MarketType.STOCK && newRegion === 'INDIA') {
+      const trimmed = symbol.trim();
+      if (trimmed && !trimmed.includes('.')) {
+        updatedSymbol = trimmed + '.NS';
+      }
+    }
+
+    onUpdate(id, { type: newType, region: newRegion, symbol: updatedSymbol, error: null });
   };
 
   // 1. Instant local search match mapping
@@ -566,6 +582,14 @@ const SymbolColumnPanel: React.FC<{
                   isFromSuggestion: false,
                   error: null
                 });
+              }}
+              onBlur={() => {
+                if (type === MarketType.STOCK && region === 'INDIA') {
+                  const trimmed = symbol.trim();
+                  if (trimmed && !trimmed.includes('.')) {
+                    onUpdate(id, { symbol: trimmed + '.NS' });
+                  }
+                }
               }}
               autoComplete="off"
               className="w-full bg-slate-100/30 dark:bg-slate-800 border border-slate-200 dark:border-slate-705 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 uppercase"

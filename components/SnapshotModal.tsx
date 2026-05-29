@@ -136,6 +136,40 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [lookedUpExchangeSymbol, setLookedUpExchangeSymbol] = React.useState<string | null>(null);
   const [showCopied, setShowCopied] = React.useState(false);
+  const [hasTipRanksForecast, setHasTipRanksForecast] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    let active = true;
+    const checkTipRanks = async () => {
+      try {
+        setHasTipRanksForecast(null); // start by showing loading or hidden until verified
+        const urlToVerify = `https://www.tipranks.com/stocks/${symbol.symbol}/forecast`;
+        const response = await fetch(`/api/check-url?url=${encodeURIComponent(urlToVerify)}`);
+        if (response.ok) {
+          const result = await response.json();
+          if (active) {
+            setHasTipRanksForecast(!!result.exists);
+          }
+        } else {
+          // If response fails, fallback to true if stock, false otherwise
+          if (active) {
+            const looksLikeCryptoOrIndex = symbol.symbol.includes("USD") || symbol.symbol.includes("INR") || symbol.symbol === "BTC" || symbol.symbol === "ETH";
+            setHasTipRanksForecast(!looksLikeCryptoOrIndex);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to verify TipRanks forecast presence:", err);
+        if (active) {
+          setHasTipRanksForecast(true); // default to true on error so we don't unnecessarily hide valid urls
+        }
+      }
+    };
+
+    checkTipRanks();
+    return () => {
+      active = false;
+    };
+  }, [symbol.symbol]);
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -634,30 +668,45 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                   </div>
                 </div>
                 <div className="space-y-3 mb-4">
-                  {snapshot?.analystViews && snapshot.analystViews.length > 0 ? snapshot.analystViews.slice(0, 3).map((view, idx) => (
-                    <div key={idx} className={`p-3 rounded-xl border transition-colors ${getRatingBadgeClass(view.rating)}`}>
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="text-[10px] font-black uppercase text-indigo-500">{view.firm}</span>
-                        <span className="text-[9px] font-bold text-slate-400">{view.date}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className={`text-xs font-bold capitalize ${getRatingColor(view.rating)}`}>{view.rating}</span>
-                        <span className="text-xs font-black text-slate-700 dark:text-slate-200">{view.targetPrice}</span>
-                      </div>
-                    </div>
-                  )) : (
+                  {snapshot?.analystViews && snapshot.analystViews.length > 0 ? snapshot.analystViews.slice(0, 3).map((view, idx) => {
+                    const fallbackUrl = `https://www.google.com/search?q=${encodeURIComponent(`${view.firm} ${symbol.symbol} analyst rating target forecast`)}`;
+                    const finalUrl = view.url || fallbackUrl;
+                    return (
+                      <a 
+                        key={idx} 
+                        href={finalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`block p-3 rounded-xl border transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer hover:shadow-sm ${getRatingBadgeClass(view.rating)}`}
+                      >
+                        <div className="flex justify-between items-start mb-1">
+                          <span className="text-[10px] font-black uppercase text-indigo-500 flex items-center gap-1">
+                            {view.firm}
+                            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                          </span>
+                          <span className="text-[9px] font-bold text-slate-400">{view.date}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className={`text-xs font-bold capitalize ${getRatingColor(view.rating)}`}>{view.rating}</span>
+                          <span className="text-xs font-black text-slate-700 dark:text-slate-200">{view.targetPrice}</span>
+                        </div>
+                      </a>
+                    );
+                  }) : (
                     <p className="text-xs text-slate-500 italic">No recent analyst projections found.</p>
                   )}
                 </div>
                 
-                <a 
-                  href={`https://www.tipranks.com/stocks/${symbol.symbol}/forecast`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex w-full items-center justify-center gap-2 py-3 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
-                >
-                  TIPRANKS FORECAST <ExternalLink className="w-3 h-3" />
-                </a>
+                {hasTipRanksForecast === true && (
+                  <a 
+                    href={`https://www.tipranks.com/stocks/${symbol.symbol}/forecast`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex w-full items-center justify-center gap-2 py-3 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
+                  >
+                    TIPRANKS FORECAST <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
               </div>
 
               {/* Peers & PE */}
