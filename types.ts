@@ -40,6 +40,7 @@ export interface PulserAnalysis {
   snapshot?: {
     intrinsicValue?: string;
     cmp?: string;
+    todayChangePercent?: string;
     high52w?: string;
     low52w?: string;
     roe?: string;

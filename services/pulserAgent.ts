@@ -302,6 +302,7 @@ export class PulserAgent {
         "snapshot": {
           "intrinsicValue": "Value",
           "cmp": "Current Market Price",
+          "todayChangePercent": "Today's Change % (e.g., +1.24% or -0.50%). Must start with '+' or '-' explicitly unless it is zero/flat.",
           "high52w": "52-Week High Value",
           "low52w": "52-Week Low Value",
           "roe": "ROE%",
@@ -491,6 +492,7 @@ export class PulserAgent {
           ...data.snapshot,
           intrinsicValue: this.sanitizePrice(data.snapshot?.intrinsicValue || ""),
           cmp: this.sanitizePrice(data.snapshot?.cmp || data.currentPrice || ""),
+          todayChangePercent: typeof data.snapshot?.todayChangePercent === 'string' ? data.snapshot.todayChangePercent : (typeof data.snapshot?.changePercent === 'string' ? data.snapshot.changePercent : (typeof data.snapshot?.change === 'string' ? data.snapshot.change : "")),
           high52w: this.sanitizePrice(data.snapshot?.high52w || ""),
           low52w: this.sanitizePrice(data.snapshot?.low52w || ""),
           ma200: this.sanitizePrice(data.snapshot?.ma200 || ""),

@@ -404,11 +404,22 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                     </div>
                     <h3 className="font-bold text-slate-800 dark:text-slate-200">Value Investing</h3>
                   </div>
-                  <div className="px-3 py-1 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-xl border border-indigo-500/20 flex items-center gap-2">
+                  <div className="px-3 py-1 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-xl border border-indigo-500/20 flex items-center gap-2.5">
                     <span className="text-[8px] text-indigo-400 dark:text-indigo-400 uppercase font-black">CMP</span>
                     <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
                       {analysis?.currencySymbol || (symbol.region === 'INDIA' ? '₹' : '$')}{snapshot?.cmp || analysis?.currentPrice || '—'}
                     </span>
+                    {snapshot?.todayChangePercent && (
+                      <span className={`text-[10px] font-black tracking-tight px-1.5 py-0.5 rounded-md ${
+                        snapshot.todayChangePercent.includes('+') || parseFloat(snapshot.todayChangePercent) > 0
+                          ? 'bg-emerald-500/10 text-emerald-500'
+                          : snapshot.todayChangePercent.includes('-') || parseFloat(snapshot.todayChangePercent) < 0
+                            ? 'bg-rose-500/10 text-rose-500'
+                            : 'bg-slate-500/10 text-slate-500'
+                      }`}>
+                        {snapshot.todayChangePercent}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
