@@ -269,26 +269,13 @@ export class PulserAgent {
         ? "CRITICAL: For currentPrice/CMP, strictly prioritize data from coinmarketcap.com." 
         : "For currentPrice/CMP, use real-time data from financial news or exchange sites.";
 
-      const prompt = `Perform an institutional-grade deep dive for ${symbol.symbol} (${symbol.name}) in the ${symbol.type} market. 
+      // Thread 1: Structural Core Trend & Standard Financial Ratios/Snapshot
+      const promptCore = `Perform an institutional-grade core structural analysis for ${symbol.symbol} (${symbol.name}) in the ${symbol.type} market. 
       Current Date: ${currentDate}.
       
       ${priceSourceHint}
       
-      CRITICAL INSTRUCTION: Use the Google Search tool efficiently with consolidated searches.
-      Specifically for the "peers" section: Conduct a quick search for the REAL-TIME Market Cap, PE Ratio, PB Ratio, and CMP (Current Market Price) for 3 direct competitors. Do NOT use fake placeholders.
-      
-      Analyze: Recent price action catalysts, earnings, and analyst sentiment.
-      
-      CRITICAL: For "growthData", find and include the Revenue and Profit (Net Income) for the PAST 5 CONSECUTIVE YEARS for the "Growth Chart". Keep descriptions brief.
-      
-      CRITICAL: For "historicalData", use Google Finance search results to provide 6-8 key spaced-out data points for each period: 1 Month (1M), 1 Year (1Y), and 5 Years (5Y). This is optimized for fast parsing and smooth rendering.
-      
-      CRITICAL: For "analystViews", find 2-3 of the most RECENT ratings (Buy/Sell/Hold), price targets, and the direct source URL or a reputable coverage article URL. If a specific source URL isn't found, find a financial news URL covering the rating.
-      
-      URL POLICY: All URLs in your response MUST be verifiable, live article links found in your search results. 
-      Do NOT provide dead links or generic homepages. EVERY link must point to a specific, active article.
-      
-      PERFORMANCE METRIC: Generate concise, direct summaries. Keep responses compact to maximize throughput and guarantee ultra-fast results.
+      CRITICAL INSTRUCTION: Use Google Search to find current live prices, company details, news, and core ratios. Keep summaries direct and high-impact.
       
       JSON OUTPUT FORMAT:
       {
@@ -315,49 +302,146 @@ export class PulserAgent {
           "marketCap": "Market Cap (e.g., $2.5T or ₹15L Cr)",
           "marginOfSafety": "Safety%",
           "ma200": "Price",
+          "ma100": "Price",
           "ma50": "Price",
           "rsi": "Value",
           "technicalCommentary": "Analysis of key technical levels",
-          "about": "Detailed background",
+          "about": "Detailed background about company/asset",
           "tradingViewTicker": "TICKER",
           "founded": "Year",
           "employees": "Count",
-          "peers": [{"name": "Peer", "pe": "PE Ratio", "marketCap": "Market Cap", "pb": "PB Ratio", "cmp": "Current Price"}],
-          "peerComparison": "Detailed paragraph comparing the company's valuation (PE/PB) and performance against these specific peers. Ensure CMP and Market Cap use real, current values. CRITICAL: For 'peers', you MUST conduct a specific search for the current real-time stock price (CMP), PE Ratio, Market Cap, and PB Ratio for each peer listed. Do NOT use placeholder values; the data MUST reflect the absolute latest available metrics from today's market session.",
-          "analystViews": [{"firm": "Morningstar/Goldman", "rating": "Buy/Outperform", "targetPrice": "Price", "date": "Date", "url": "ARTICLE_OR_REPORT_URL"}],
-          "expansionPlans": [{"plan": "Strategic point", "date": "Estimated timeline, e.g., Q4 2024"}],
-          "growthData": [{"year": "2023", "revenue": 100.5, "profit": 15.2, "growth": 10.5}],
-          "historicalData": {
-            "1M": [{"date": "YYYY-MM-DD", "price": 100.5}],
-            "1Y": [{"date": "YYYY-MM-DD", "price": 100.5}],
-            "5Y": [{"date": "YYYY-MM-DD", "price": 100.5}]
-          },
+          "expansionPlans": [{"plan": "Strategic point", "date": "e.g., Q4 2026"}],
           "news": [{"title": "Article Headline", "url": "ARTICLE_URL", "date": "Published Date"}]
         }
       }`;
 
-      const response = await this.callAi(prompt, {
-        tools: [{ googleSearch: {} }]
-      });
-
-      const text = response.text || "";
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      const data = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(text);
-
-      // Extract high-quality grounding metadata
-      const candidate = (response as any).candidates?.[0];
-      const groundingMetadata = (candidate as any)?.groundingMetadata;
-      const chunks = groundingMetadata?.groundingChunks || [];
+      // Thread 2: Five-Year Growth & High Fidelity Historical Price Charting
+      const promptHistorical = `Gather consecutive annual revenue/profit files and accurate historical stock price patterns for ${symbol.symbol} (${symbol.name}) in the ${symbol.type} market.
+      Current Date: ${currentDate}.
       
-      // Use grounding metadata to override/supplement links found by the model
-      const verifiedLinks = chunks
-        .filter((c: any) => c.web?.uri)
-        .map((c: any) => ({
-          title: c.web.title || "Verified Source",
-          url: c.web.uri
-        }));
+      CRITICAL: For "growthData", find and include the Revenue and Profit (Net Income) for the PAST 5 CONSECUTIVE YEARS for the "Growth Chart".
+      CRITICAL: For "historicalData", use Google Finance search results to provide 6-8 key spaced-out true chronological price points for each period: 1 Month (1M), 1 Year (1Y), and 5 Years (5Y). This is optimized for smooth, representative rendering in Recharts charts.
+      
+      JSON OUTPUT FORMAT:
+      {
+        "snapshot": {
+          "growthData": [{"year": "YYYY", "revenue": number, "profit": number, "growth": number}],
+          "historicalData": {
+            "1M": [{"date": "YYYY-MM-DD", "price": number}],
+            "1Y": [{"date": "YYYY-MM-DD", "price": number}],
+            "5Y": [{"date": "YYYY-MM-DD", "price": number}]
+          }
+        }
+      }`;
 
-      const verifiedUris = new Set(verifiedLinks.map((l: any) => l.url));
+      // Thread 3: Peer Comparisons & Live Professional Analyst Views
+      const promptPeers = `Gather peer/competitor metrics and recent professional analyst ratings/price targets for ${symbol.symbol} (${symbol.name}) in the ${symbol.type} market.
+      Current Date: ${currentDate}.
+      
+      CRITICAL: For competitor "peers" section, conduct a Google Search for 3 direct competitors. Find their REAL-TIME Market Cap, PE Ratio, PB Ratio, and CMP (Current Market Price). Do NOT use generic placeholder values.
+      CRITICAL: For "analystViews", find 2-3 of the most RECENT ratings (Buy/Sell/Hold), price targets, and the direct source URL or a reputable coverage article URL. Every rating must have a live news or report link.
+      
+      JSON OUTPUT FORMAT:
+      {
+        "snapshot": {
+          "peers": [{"name": "PEER_TICKER", "pe": "PE Ratio", "marketCap": "Market Cap", "pb": "PB Ratio", "cmp": "Current Price"}],
+          "peerComparison": "Paragraph comparing valuation (PE/PB) and performance against peers using real data.",
+          "analystViews": [{"firm": "Firm Name", "rating": "Buy/Sell/etc", "targetPrice": "Price", "date": "Date", "url": "ARTICLE_OR_REPORT_URL"}]
+        }
+      }`;
+
+      // Run specialized analysis threads in parallel
+      const [responseCore, responseHistorical, responsePeers] = await Promise.all([
+        this.callAi(promptCore, { tools: [{ googleSearch: {} }] }).catch(err => {
+          console.error("Thread 1 (Core) failed, carrying on:", err);
+          return null;
+        }),
+        this.callAi(promptHistorical, { tools: [{ googleSearch: {} }] }).catch(err => {
+          console.error("Thread 2 (Historical) failed, carrying on:", err);
+          return null;
+        }),
+        this.callAi(promptPeers, { tools: [{ googleSearch: {} }] }).catch(err => {
+          console.error("Thread 3 (Peers) failed, carrying on:", err);
+          return null;
+        })
+      ]);
+
+      let dataCore: any = {};
+      let dataHistorical: any = {};
+      let dataPeers: any = {};
+
+      let verifiedLinks: { title: string; url: string }[] = [];
+      const verifiedUris = new Set<string>();
+
+      // Extract details and grounding chunks from Thread 1
+      if (responseCore) {
+        try {
+          const text = responseCore.text || "";
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          dataCore = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(text);
+
+          const candidate = (responseCore as any).candidates?.[0];
+          const groundingMetadata = (candidate as any)?.groundingMetadata;
+          const chunks = groundingMetadata?.groundingChunks || [];
+          const links = chunks
+            .filter((c: any) => c.web?.uri)
+            .map((c: any) => ({
+              title: c.web.title || "Core Verified Source",
+              url: c.web.uri
+            }));
+          verifiedLinks = [...verifiedLinks, ...links];
+        } catch (e) {
+          console.warn("Failed to parse Thread 1 Core JSON:", e);
+        }
+      }
+
+      // Extract details and grounding chunks from Thread 2
+      if (responseHistorical) {
+        try {
+          const text = responseHistorical.text || "";
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          dataHistorical = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(text);
+        } catch (e) {
+          console.warn("Failed to parse Thread 2 Historical JSON:", e);
+        }
+      }
+
+      // Extract details and grounding chunks from Thread 3
+      if (responsePeers) {
+        try {
+          const text = responsePeers.text || "";
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          dataPeers = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(text);
+
+          const candidate = (responsePeers as any).candidates?.[0];
+          const groundingMetadata = (candidate as any)?.groundingMetadata;
+          const chunks = groundingMetadata?.groundingChunks || [];
+          const links = chunks
+            .filter((c: any) => c.web?.uri)
+            .map((c: any) => ({
+              title: c.web.title || "Analyst Verified Source",
+              url: c.web.uri
+            }));
+          verifiedLinks = [...verifiedLinks, ...links];
+        } catch (e) {
+          console.warn("Failed to parse Thread 3 Peers JSON:", e);
+        }
+      }
+
+      verifiedLinks.forEach((l: any) => verifiedUris.add(l.url));
+
+      // Merge snapshots from all three threads
+      const mergedSnapshotObj = {
+        ...(dataCore.snapshot || {}),
+        ...(dataHistorical.snapshot || {}),
+        ...(dataPeers.snapshot || {})
+      };
+
+      // Consolidate into backward-compatible combined 'data'
+      const data = {
+        ...dataCore,
+        snapshot: mergedSnapshotObj
+      };
 
       // Validation function to detect potential hallucinated or generic URLs
       const isDeadLink = (url: string, isFromGrounding: boolean = false) => {

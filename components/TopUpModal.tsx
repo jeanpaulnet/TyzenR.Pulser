@@ -40,9 +40,8 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ onClose, userEmail }) =>
   };
 
   const packOptions = [
-    { amount: 5, credits: 5, label: 'Starter', icon: CreditCard },
-    { amount: 10, credits: 11, label: 'Popular', icon: Zap, popular: true },
-    { amount: 25, credits: 30, label: 'Pro', icon: Shield },
+    { amount: 10, scans: 100, label: 'Popular', icon: Zap, popular: true },
+    { amount: 50, scans: 1000, label: 'Pro', icon: Shield },
   ];
 
   return (
@@ -59,7 +58,7 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ onClose, userEmail }) =>
             </div>
             <div>
               <h3 className="text-lg font-black text-slate-800 dark:text-white leading-none">Top Up Balance</h3>
-              <p className="text-xs text-slate-500 mt-1">Get credits for deep AI analysis</p>
+              <p className="text-xs text-slate-500 mt-1">Get scans for deep AI analysis</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400">
@@ -90,7 +89,7 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ onClose, userEmail }) =>
                       {pack.label} Pack
                     </p>
                     <p className="text-xs text-slate-500 font-medium">
-                      {pack.credits} Credits • ${pack.amount}
+                      {pack.scans} Scans • ${pack.amount}
                     </p>
                   </div>
                 </div>

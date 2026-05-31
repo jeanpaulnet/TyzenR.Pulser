@@ -555,7 +555,11 @@ const SymbolColumnPanel: React.FC<{
         {(totalColumns > 1 || isValidating) && (
           <div className="flex items-center justify-between pb-2 border-b border-slate-200/50 dark:border-slate-800/80">
             {totalColumns > 1 && (
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border ${
+                index === 0 
+                  ? 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700' 
+                  : 'text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 border-indigo-100 dark:border-indigo-900/40'
+              }`}>
                 Symbol #{index + 1}
               </span>
             )}

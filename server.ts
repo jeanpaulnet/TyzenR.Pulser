@@ -126,8 +126,8 @@ async function startServer() {
             price_data: {
               currency: currency,
               product_data: {
-                name: `Top up Pulser Credits (${amount} units)`,
-                description: "AI-powered stock and market analysis credits",
+                name: `Top up Pulser Scans`,
+                description: "AI-powered stock and market analysis scans",
               },
               unit_amount: Math.round(amount * 100), // amount in cents
             },
