@@ -141,6 +141,12 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
   React.useEffect(() => {
     let active = true;
     const checkTipRanks = async () => {
+      if (symbol.type !== MarketType.STOCK || symbol.region !== 'US') {
+        if (active) {
+          setHasTipRanksForecast(false);
+        }
+        return;
+      }
       try {
         setHasTipRanksForecast(null); // start by showing loading or hidden until verified
         const urlToVerify = `https://www.tipranks.com/stocks/${symbol.symbol}/forecast`;
@@ -169,7 +175,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
     return () => {
       active = false;
     };
-  }, [symbol.symbol]);
+  }, [symbol.symbol, symbol.type, symbol.region]);
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -708,7 +714,7 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                   )}
                 </div>
                 
-                {hasTipRanksForecast === true && (
+                {symbol.type === MarketType.STOCK && symbol.region === 'US' && hasTipRanksForecast === true && (
                   <a 
                     href={`https://www.tipranks.com/stocks/${symbol.symbol}/forecast`}
                     target="_blank"

@@ -678,11 +678,11 @@ const SymbolColumnPanel: React.FC<{
             onChange={handleTypeSelectChange}
             className="w-full bg-slate-100/30 dark:bg-slate-800 border border-slate-205 dark:border-slate-700 rounded-lg px-2 py-2 text-xs font-bold focus:outline-none text-slate-800 dark:text-white appearance-none cursor-pointer"
           >
-            <option value="AMERICA_STOCK">🇺🇸 America Stock</option>
-            <option value="INDIA_STOCK">🇮🇳 India Stock</option>
-            <option value="CRYPTO">🪙 Crypto</option>
-            <option value="COMMODITY">📦 Commodity</option>
-            <option value="INDEX">📊 Index</option>
+            <option value="AMERICA_STOCK">🇺🇸 United States (US Stock)</option>
+            <option value="INDIA_STOCK">🇮🇳 India (NSE / BSE Stock)</option>
+            <option value="CRYPTO">🪙 Cryptocurrency (Global)</option>
+            <option value="COMMODITY">📦 Commodities (Global)</option>
+            <option value="INDEX">📊 Stock Indices (Global Indices)</option>
           </select>
         </div>
 

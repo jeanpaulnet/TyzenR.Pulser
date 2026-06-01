@@ -41,7 +41,7 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ onClose, userEmail }) =>
 
   const packOptions = [
     { amount: 10, scans: 100, label: 'Popular', icon: Zap, popular: true },
-    { amount: 50, scans: 1000, label: 'Pro', icon: Shield },
+    { amount: 50, scans: 1000, label: 'Pro', icon: Shield, bestValue: true },
   ];
 
   return (
@@ -94,7 +94,12 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({ onClose, userEmail }) =>
                   </div>
                 </div>
                 {pack.popular && (
-                  <span className="absolute -top-2.5 right-6 px-2 py-0.5 bg-indigo-500 text-white text-[9px] font-black rounded-full uppercase tracking-widest shadow-lg shadow-indigo-500/20">
+                  <span className="absolute -top-2.5 right-6 px-2 py-0.5 bg-indigo-550 text-white text-[9px] font-black rounded-full uppercase tracking-widest shadow-lg shadow-indigo-550/20">
+                    Popular
+                  </span>
+                )}
+                {pack.bestValue && (
+                  <span className="absolute -top-2.5 right-6 px-2 py-0.5 bg-emerald-500 text-white text-[9px] font-black rounded-full uppercase tracking-widest shadow-lg shadow-emerald-500/20">
                     Best Value
                   </span>
                 )}
