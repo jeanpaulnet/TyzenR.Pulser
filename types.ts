@@ -87,6 +87,7 @@ export interface MarketSentiment {
   buffettIndicator?: { value: string; status: string };
   dowJones?: { value: string; change: string };
   nifty50?: { value: string; change: string };
+  niftyPe?: { value: string; status: string };
   lastUpdated: string;
 }
 

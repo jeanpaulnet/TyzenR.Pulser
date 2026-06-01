@@ -971,6 +971,14 @@ const App: React.FC = () => {
                         </span>
                       </div>
                     )}
+                    {hasIndiaStocks && state.marketSentiment?.niftyPe && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">NIFTY PE Ratio</span>
+                        <span className="font-bold text-indigo-500 dark:text-indigo-400">
+                          {state.marketSentiment.niftyPe.value} <span className="text-[10px] font-normal text-slate-500">({state.marketSentiment.niftyPe.status})</span>
+                        </span>
+                      </div>
+                    )}
                     {!state.marketSentiment && (
                       <div className="flex items-center justify-center py-2">
                         <div className="flex items-center gap-2 text-[10px] text-slate-500 italic">

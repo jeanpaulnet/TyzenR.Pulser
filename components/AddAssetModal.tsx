@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MarketType, MarketSymbol } from '../types';
-import { Plus, X, Globe, Landmark, Coins, LineChart, Loader2 } from 'lucide-react';
+import { Plus, X, Globe, Landmark, Coins, LineChart, Loader2, ChevronDown } from 'lucide-react';
 import { pulser } from '../services/pulserAgent';
 import { searchLocalSymbols } from '../services/commonSymbols';
 
@@ -376,24 +376,71 @@ const SymbolColumnPanel: React.FC<{
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const typeDropdownRef = useRef<HTMLDivElement>(null);
 
-  const getCurrentTypeValue = () => {
-    if (type === MarketType.STOCK) {
-      if (region === 'INDIA') return 'INDIA_STOCK';
-      return 'AMERICA_STOCK';
+  const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node)) {
+        setIsTypeDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const typeOptions = [
+    {
+      value: "AMERICA_STOCK",
+      label: "United States (US Stock)",
+      icon: (
+        <span className="w-5 h-4 rounded bg-blue-600 text-[9px] font-black text-white flex items-center justify-center tracking-tighter shrink-0 select-none">
+          US
+        </span>
+      )
+    },
+    {
+      value: "INDIA_STOCK",
+      label: "India (NSE / BSE Stock)",
+      icon: (
+        <span className="w-5 h-4 rounded bg-orange-500 text-[9px] font-black text-white flex items-center justify-center tracking-tighter shrink-0 select-none">
+          IN
+        </span>
+      )
+    },
+    {
+      value: "CRYPTO",
+      label: "Cryptocurrency (Global)",
+      icon: (
+        <span className="w-5 h-4 rounded bg-[#5B21B6] flex items-center justify-center text-white shrink-0 select-none">
+          <Coins className="w-3 h-3" />
+        </span>
+      )
+    },
+    {
+      value: "COMMODITY",
+      label: "Commodities (Global)",
+      icon: (
+        <span className="w-5 h-4 rounded bg-[#B45309] flex items-center justify-center text-white shrink-0 select-none">
+          <Globe className="w-3 h-3" />
+        </span>
+      )
+    },
+    {
+      value: "INDEX",
+      label: "Stock Indices (Global Indices)",
+      icon: (
+        <span className="w-5 h-4 rounded bg-[#047857] flex items-center justify-center text-white shrink-0 select-none">
+          <LineChart className="w-3 h-3" />
+        </span>
+      )
     }
-    return type; // 'CRYPTO' | 'COMMODITY' | 'INDEX'
-  };
+  ];
 
-  const getAPIWordFromType = () => {
-    const currentVal = getCurrentTypeValue();
-    if (currentVal === 'AMERICA_STOCK') return 'america';
-    if (currentVal === 'INDIA_STOCK') return 'india';
-    return currentVal.toLowerCase(); // 'crypto' | 'commodity' | 'index'
-  };
-
-  const handleTypeSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
+  const handleTypeSelectValue = (val: string) => {
     let newType = MarketType.STOCK;
     let newRegion: 'US' | 'INDIA' | 'GLOBAL' = 'US';
 
@@ -424,6 +471,22 @@ const SymbolColumnPanel: React.FC<{
     }
 
     onUpdate(id, { type: newType, region: newRegion, symbol: updatedSymbol, error: null });
+    setIsTypeDropdownOpen(false);
+  };
+
+  const getCurrentTypeValue = () => {
+    if (type === MarketType.STOCK) {
+      if (region === 'INDIA') return 'INDIA_STOCK';
+      return 'AMERICA_STOCK';
+    }
+    return type; // 'CRYPTO' | 'COMMODITY' | 'INDEX'
+  };
+
+  const getAPIWordFromType = () => {
+    const currentVal = getCurrentTypeValue();
+    if (currentVal === 'AMERICA_STOCK') return 'america';
+    if (currentVal === 'INDIA_STOCK') return 'india';
+    return currentVal.toLowerCase(); // 'crypto' | 'commodity' | 'index'
   };
 
   // 1. Instant local search match mapping
@@ -671,41 +734,40 @@ const SymbolColumnPanel: React.FC<{
         </div>
 
         {/* Type Select */}
-        <div>
+        <div className="relative" ref={typeDropdownRef}>
           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Type</label>
-          <select 
-            value={getCurrentTypeValue()}
-            onChange={handleTypeSelectChange}
-            className="w-full bg-slate-100/30 dark:bg-slate-800 border border-slate-205 dark:border-slate-700 rounded-lg px-2 py-2 text-xs font-bold focus:outline-none text-slate-800 dark:text-white appearance-none cursor-pointer"
+          <button
+            type="button"
+            onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
+            className="w-full flex items-center justify-between bg-slate-100/30 dark:bg-slate-800 border border-slate-205 dark:border-slate-700 rounded-lg px-3 py-2 text-xs font-bold text-slate-850 dark:text-white cursor-pointer select-none focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
-            <option value="AMERICA_STOCK">🇺🇸 United States (US Stock)</option>
-            <option value="INDIA_STOCK">🇮🇳 India (NSE / BSE Stock)</option>
-            <option value="CRYPTO">🪙 Cryptocurrency (Global)</option>
-            <option value="COMMODITY">📦 Commodities (Global)</option>
-            <option value="INDEX">📊 Stock Indices (Global Indices)</option>
-          </select>
-        </div>
+            <span className="flex items-center gap-2">
+              {typeOptions.find(opt => opt.value === getCurrentTypeValue())?.icon}
+              <span>{typeOptions.find(opt => opt.value === getCurrentTypeValue())?.label}</span>
+            </span>
+            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isTypeDropdownOpen ? 'transform rotate-180' : ''}`} />
+          </button>
 
-        {region === 'INDIA' && (
-          <div className="p-2.5 bg-orange-50/50 dark:bg-orange-500/10 border border-orange-100/80 dark:border-orange-500/20 rounded-xl">
-            <span className="text-[9px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest block mb-1">Guide</span>
-            <p className="text-[9px] text-orange-700/80 dark:text-orange-400/80 leading-tight">
-              NSE uses <span className="font-bold">.NS</span>, BSE uses <span className="font-bold">.BO</span>.
-            </p>
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {['RELIANCE.NS', 'TCS.NS'].map(hint => (
-                <button 
-                  key={hint}
+          {isTypeDropdownOpen && (
+            <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-2xl overflow-hidden py-1">
+              {typeOptions.map((opt) => (
+                <button
+                  key={opt.value}
                   type="button"
-                  onClick={() => onUpdate(id, { symbol: hint, isFromSuggestion: false, error: null })}
-                  className="text-[8px] font-black bg-white dark:bg-orange-950 px-1.5 py-0.5 rounded border border-orange-100 dark:border-orange-500/20 text-orange-600 dark:text-orange-400 hover:bg-orange-100 cursor-pointer"
+                  onClick={() => handleTypeSelectValue(opt.value)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-xs font-semibold hover:bg-slate-150 dark:hover:bg-slate-750 cursor-pointer transition-colors ${
+                    getCurrentTypeValue() === opt.value ? 'bg-blue-50/50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 font-extrabold' : 'text-slate-700 dark:text-slate-300'
+                  }`}
                 >
-                  {hint}
+                  {opt.icon}
+                  <span>{opt.label}</span>
                 </button>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+
 
         <div>
           <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block flex justify-between">

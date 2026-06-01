@@ -779,6 +779,7 @@ export class PulserAgent {
       2. Warren Buffett Indicator (current percentage value of Market Cap to GDP and status, e.g., 185%, "Significantly Overvalued")
       3. Dow Jones Industrial Average (current value and today's percentage change)
       4. NIFTY 50 Index (current value and today's percentage change)
+      5. NIFTY PE Ratio (current value and status/valuation label, e.g., 22.8, "Fair Valued")
 
       Use Google Search to find the most recent values from last few hours.
       
@@ -787,7 +788,8 @@ export class PulserAgent {
         "fearGreed": {"value": number, "label": "string"},
         "buffettIndicator": {"value": "string", "status": "string"},
         "dowJones": {"value": "string", "change": "string (e.g. +0.4%)"},
-        "nifty50": {"value": "string", "change": "string (e.g. -0.2%)"}
+        "nifty50": {"value": "string", "change": "string (e.g. -0.2%)"},
+        "niftyPe": {"value": "string", "status": "string"}
       }`;
 
       const response = await this.callAi(prompt, {
