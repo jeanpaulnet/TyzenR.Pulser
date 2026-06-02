@@ -316,8 +316,14 @@ export class PulserAgent {
       }`;
 
       // Thread 2: Five-Year Growth & High Fidelity Historical Price Charting
+      const screenerHint = symbol.region === 'INDIA' 
+        ? "CRITICAL: For 'growthData' of India stocks, prioritize and run Google Searches specifically on screener.in (such as site:screener.in) to fetch accurate annual consecutive revenue/sales and net profit values for the last 5 consecutive years."
+        : "";
+
       const promptHistorical = `Gather consecutive annual revenue/profit files and accurate historical stock price patterns for ${symbol.symbol} (${symbol.name}) in the ${symbol.type} market.
       Current Date: ${currentDate}.
+      
+      ${screenerHint}
       
       CRITICAL: For "growthData", find and include the Revenue and Profit (Net Income) for the PAST 5 CONSECUTIVE YEARS for the "Growth Chart".
       CRITICAL: For "historicalData", use Google Finance search results to provide 6-8 key spaced-out true chronological price points for each period: 1 Month (1M), 1 Year (1Y), and 5 Years (5Y). This is optimized for smooth, representative rendering in Recharts charts.
@@ -535,7 +541,7 @@ export class PulserAgent {
 
       // Sanitize Growth Data (ensure numeric values for Recharts)
       const rawGrowth = data.snapshot?.growthData || [];
-      const sanitizedGrowth = rawGrowth.map((g: any) => {
+      let sanitizedGrowth = rawGrowth.map((g: any) => {
         const sanitizeValue = (val: any) => {
           if (typeof val === 'number') return val;
           if (typeof val === 'string') {
@@ -554,6 +560,58 @@ export class PulserAgent {
           growth: sanitizeValue(g.growth || g.Growth || 0)
         };
       }).filter((g: any) => g.year);
+
+      // If Indian stock and growth data is missing or incomplete, parse from screener.in
+      if (symbol.region === 'INDIA' && (sanitizedGrowth.length === 0 || !sanitizedGrowth.some((g: any) => g.revenue > 0))) {
+        try {
+          console.log(`Indian stock growth data not available or all-zeroes. Launching targeted real-time fallback to screener.in for ${symbol.symbol}...`);
+          const screenerPrompt = `Retrieve the annual Profit & Loss data from screener.in (site:screener.in) for the Indian stock "${symbol.symbol}" (Company Name: "${symbol.name}").
+          Find the annual Net Profit and Revenue/Sales columns for the past 5 consecutive financial years (e.g., Mar 2021, Mar 2022, Mar 2023, Mar 2024, Mar 2025).
+          
+          Return ONLY a JSON array of annual performance:
+          [
+            {"year": "YYYY", "revenue": number, "profit": number, "growth": number}
+          ]
+          
+          Do not include any narrative or markdown around the JSON.`;
+          
+          const screenerResponse = await this.callAi(screenerPrompt, {
+            tools: [{ googleSearch: {} }]
+          });
+          
+          if (screenerResponse && screenerResponse.text) {
+            const cleanText = screenerResponse.text.trim();
+            const jsonMatch = cleanText.match(/\[[\s\S]*\]/);
+            const parsedArray = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(cleanText);
+            
+            if (Array.isArray(parsedArray) && parsedArray.length > 0) {
+              const sanitizeValue = (val: any) => {
+                if (typeof val === 'number') return val;
+                if (typeof val === 'string') {
+                  const cleaned = val.replace(/[^0-9.-]/g, '');
+                  const parsed = parseFloat(cleaned);
+                  return isNaN(parsed) ? 0 : parsed;
+                }
+                return 0;
+              };
+
+              const parsedSanitized = parsedArray.map((g: any) => ({
+                year: String(g.year || g.Year || ''),
+                revenue: sanitizeValue(g.revenue || g.Revenue || 0),
+                profit: sanitizeValue(g.profit || g.Profit || g.NetIncome || 0),
+                growth: sanitizeValue(g.growth || g.Growth || 0)
+              })).filter((g: any) => g.year);
+
+              if (parsedSanitized.length > 0) {
+                console.log(`Successfully parsed Indian stock growth data from screener.in:`, parsedSanitized);
+                sanitizedGrowth = parsedSanitized;
+              }
+            }
+          }
+        } catch (screenerErr) {
+          console.warn("Failed to gather growth data from screener.in fallback:", screenerErr);
+        }
+      }
 
       // Sanitize Historical Data
       const rawHistorical = data.snapshot?.historicalData || {};
