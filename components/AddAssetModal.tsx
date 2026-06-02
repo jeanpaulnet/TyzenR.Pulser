@@ -374,6 +374,42 @@ const SymbolColumnPanel: React.FC<{
     isValidating,
   } = column;
 
+  const preprocessSuggestions = (suggestions: { symbol: string; name: string; type: MarketType; region?: 'US' | 'INDIA' | 'GLOBAL' }[]) => {
+    if (!suggestions) return [];
+    if (region !== 'INDIA') return suggestions;
+
+    const seenUppercaseSymbols = new Set<string>();
+    const processed: typeof suggestions = [];
+
+    for (const item of suggestions) {
+      let sym = (item.symbol || '').toUpperCase().trim();
+      if (!sym) continue;
+
+      // Normalization for Indian stocks: If a stock has no period, add the default .NS suffix.
+      const isStockType = item.type === MarketType.STOCK;
+      const isGlobalIndexOrCrypto = item.region === 'GLOBAL' || item.symbol.startsWith('^') || item.symbol.includes('=');
+      const looksLikeIndianStock = isStockType && !isGlobalIndexOrCrypto && !sym.includes('.');
+
+      if (looksLikeIndianStock) {
+        sym = `${sym}.NS`;
+      }
+
+      if (seenUppercaseSymbols.has(sym)) {
+        continue; // deduplicate
+      }
+
+      seenUppercaseSymbols.add(sym);
+      processed.push({
+        ...item,
+        symbol: sym
+      });
+    }
+
+    return processed;
+  };
+
+  const processedSuggestions = preprocessSuggestions(searchSuggestions);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const typeDropdownRef = useRef<HTMLDivElement>(null);
@@ -461,16 +497,7 @@ const SymbolColumnPanel: React.FC<{
       newRegion = 'GLOBAL';
     }
 
-    // Automatically append .NS if they switched to/are choosing an Indian stock
-    let updatedSymbol = symbol;
-    if (newType === MarketType.STOCK && newRegion === 'INDIA') {
-      const trimmed = symbol.trim();
-      if (trimmed && !trimmed.includes('.')) {
-        updatedSymbol = trimmed + '.NS';
-      }
-    }
-
-    onUpdate(id, { type: newType, region: newRegion, symbol: updatedSymbol, error: null });
+    onUpdate(id, { type: newType, region: newRegion, symbol, error: null });
     setIsTypeDropdownOpen(false);
   };
 
@@ -650,14 +677,6 @@ const SymbolColumnPanel: React.FC<{
                   error: null
                 });
               }}
-              onBlur={() => {
-                if (type === MarketType.STOCK && region === 'INDIA') {
-                  const trimmed = symbol.trim();
-                  if (trimmed && !trimmed.includes('.')) {
-                    onUpdate(id, { symbol: trimmed + '.NS' });
-                  }
-                }
-              }}
               autoComplete="off"
               className="w-full bg-slate-100/30 dark:bg-slate-800 border border-slate-200 dark:border-slate-705 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 uppercase"
             />
@@ -669,9 +688,9 @@ const SymbolColumnPanel: React.FC<{
           </div>
 
           {/* Search Autocomplete Suggestions */}
-          {searchSuggestions.length > 0 && (
+          {processedSuggestions.length > 0 && (
             <div className="absolute z-40 left-0 right-0 mt-1 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-750 rounded-xl shadow-2xl overflow-hidden max-h-48 overflow-y-auto">
-              {searchSuggestions.map((sugg, idx) => (
+              {processedSuggestions.map((sugg, idx) => (
                 <button
                   key={idx}
                   type="button"
