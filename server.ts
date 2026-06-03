@@ -1,9 +1,88 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import Stripe from "stripe";
 import cors from "cors";
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { getFirebaseDb } from "./services/firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+
+const STATES_FILE = path.join(process.cwd(), "user_states.json");
+
+function readUserStatesFromFile(): Record<string, any> {
+  try {
+    if (fs.existsSync(STATES_FILE)) {
+      const content = fs.readFileSync(STATES_FILE, "utf-8");
+      return JSON.parse(content);
+    }
+  } catch (err) {
+    console.error("Failed to read user states from local file:", err);
+  }
+  return {};
+}
+
+function saveUserStateToFile(email: string, state: any) {
+  try {
+    const states = readUserStatesFromFile();
+    states[email.toLowerCase().trim()] = state;
+    const tempFile = STATES_FILE + ".tmp";
+    fs.writeFileSync(tempFile, JSON.stringify(states, null, 2), "utf-8");
+    fs.renameSync(tempFile, STATES_FILE);
+  } catch (err) {
+    console.error("Failed to save user state to local file:", err);
+  }
+}
+
+async function getUserState(email: string): Promise<any> {
+  const normEmail = email.toLowerCase().trim();
+  
+  // 1. Try Firestore first if available
+  try {
+    const db = await getFirebaseDb();
+    if (db) {
+      const docRef = doc(db, "user_states", normEmail);
+      const snapshot = await getDoc(docRef);
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data && data.state) {
+          console.log(`Loaded state for user ${normEmail} from Firestore.`);
+          saveUserStateToFile(normEmail, data.state);
+          return data.state;
+        }
+      }
+    }
+  } catch (err: any) {
+    console.warn(`Firestore read failed for ${normEmail}, falling back to local file:`, err.message || err);
+  }
+
+  // 2. Fall back to local file persistence
+  const states = readUserStatesFromFile();
+  return states[normEmail] || null;
+}
+
+async function saveUserState(email: string, state: any): Promise<void> {
+  const normEmail = email.toLowerCase().trim();
+
+  // 1. Save to local file cache first (always have a backup, super fast)
+  saveUserStateToFile(normEmail, state);
+
+  // 2. Sync to Firestore if available
+  try {
+    const db = await getFirebaseDb();
+    if (db) {
+      const docRef = doc(db, "user_states", normEmail);
+      await setDoc(docRef, {
+        email: normEmail,
+        state: state,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      console.log(`Synced state for user ${normEmail} to Firestore.`);
+    }
+  } catch (err: any) {
+    console.warn(`Firestore sync failed for ${normEmail}:`, err.message || err);
+  }
+}
 
 // Initialize Stripe lazily
 let stripe: Stripe | null = null;
@@ -110,6 +189,38 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
+  // User state persistence routes (per-user symbols, notes, analyses)
+  app.get("/api/user/state", async (req, res) => {
+    try {
+      const email = req.query.email as string;
+      if (!email) {
+        return res.status(400).json({ error: "Missing email parameter" });
+      }
+      const state = await getUserState(email);
+      res.json(state || {});
+    } catch (error: any) {
+      console.error("Error fetching user state:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/user/state", async (req, res) => {
+    try {
+      const { email, state } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: "Missing email parameter" });
+      }
+      if (!state) {
+        return res.status(400).json({ error: "Missing state parameter" });
+      }
+      await saveUserState(email, state);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error saving user state:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/stripe/create-checkout-session", async (req, res) => {
     try {
       const { amount, currency = "usd", email } = req.body;

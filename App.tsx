@@ -278,10 +278,64 @@ const App: React.FC = () => {
     }
   }, [isSupportModalOpen, user]);
 
-  // Persistence
+  // Persistence & User Level Watchlist Sync
   useEffect(() => {
+    if (user && user.email) {
+      const loadUserRemoteState = async () => {
+        try {
+          console.log(`Syncing custom watchlist state with server-side account for ${user.email}...`);
+          const res = await fetch(`/api/user/state?email=${encodeURIComponent(user.email)}`);
+          if (res.ok) {
+            const remoteState = await res.json();
+            
+            if (remoteState && Array.isArray(remoteState.symbols) && remoteState.symbols.length > 0) {
+              setState({
+                symbols: remoteState.symbols,
+                analyses: remoteState.analyses || {},
+                generalNotes: remoteState.generalNotes || '',
+                marketSentiment: remoteState.marketSentiment
+              });
+              console.log("Successfully retrieved and synchronized your customized watchlist from the cloud!");
+            } else {
+              // User has no saved state on the server yet.
+              // We should upload the current front-end state so they don't lose the assets they entered as a guest!
+              console.log("Saving initial guest symbols to your new cloud account...");
+              await fetch('/api/user/state', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: user.email, state }),
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Unable to query user's cloud watchlist:", err);
+        }
+      };
+      loadUserRemoteState();
+    }
+  }, [user?.email]);
+
+  useEffect(() => {
+    // Local storage persistence always updated instantly for snappy tabs / browser loads
     localStorage.setItem('pulser_state', JSON.stringify(state));
-  }, [state]);
+
+    if (user && user.email) {
+      const saveTimeout = setTimeout(async () => {
+        try {
+          await fetch('/api/user/state', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email, state }),
+          });
+          console.log("State successfully synchronized with server account.");
+        } catch (err) {
+          console.error("Failed to auto-save state to server account:", err);
+        }
+      }, 1200);
+
+      return () => clearTimeout(saveTimeout);
+    }
+  }, [state, user?.email]);
 
   useEffect(() => {
     if (user) {
@@ -769,6 +823,15 @@ const App: React.FC = () => {
     setUser(null);
     localStorage.removeItem('pulser_user');
     setIsUserMenuOpen(false);
+    // Reset back to INITIAL_SYMBOLS upon logout to prevent cross-contamination of watchlists and notes
+    const resetState = {
+      symbols: INITIAL_SYMBOLS,
+      analyses: {},
+      generalNotes: '',
+      marketSentiment: undefined
+    };
+    setState(resetState);
+    localStorage.setItem('pulser_state', JSON.stringify(resetState));
   };
 
   return (

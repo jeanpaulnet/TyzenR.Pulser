@@ -518,6 +518,13 @@ const SymbolColumnPanel: React.FC<{
 
   // 1. Instant local search match mapping
   useEffect(() => {
+    if (isFromSuggestion) {
+      if (searchSuggestions.length > 0) {
+        onUpdate(id, { searchSuggestions: [] });
+      }
+      return;
+    }
+
     const trimmed = symbol.trim();
     if (trimmed.length > 0) {
       const localResults = searchLocalSymbols(trimmed, region);
@@ -543,7 +550,7 @@ const SymbolColumnPanel: React.FC<{
         error: null
       });
     }
-  }, [symbol, region]);
+  }, [symbol, region, isFromSuggestion]);
 
   // 3. Click outside handler to dismiss search suggestions
   useEffect(() => {
@@ -560,6 +567,8 @@ const SymbolColumnPanel: React.FC<{
 
   // 2. Debounced API search suggestions for manual queries
   useEffect(() => {
+    if (isFromSuggestion) return;
+
     const trimmed = symbol.trim();
     if (trimmed.length < 2) return;
 
@@ -624,7 +633,7 @@ const SymbolColumnPanel: React.FC<{
     }, 450);
 
     return () => clearTimeout(timer);
-  }, [symbol, region, type]);
+  }, [symbol, region, type, isFromSuggestion]);
 
   return (
     <div 
