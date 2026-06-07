@@ -24,6 +24,10 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
   const isAnalyzing = analysis?.isAnalyzing;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  const lastUpdated = analysis?.lastUpdated;
+  const isOlderThan3Days = lastUpdated ? (Date.now() - new Date(lastUpdated).getTime()) > 3 * 24 * 60 * 60 * 1000 : false;
+  const daysOld = lastUpdated ? Math.floor((Date.now() - new Date(lastUpdated).getTime()) / (24 * 60 * 60 * 1000)) : 0;
+
   const scrollSources = (amount: number) => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollBy({ left: amount, behavior: 'smooth' });
@@ -277,9 +281,14 @@ const MarketCard: React.FC<MarketCardProps> = ({ symbol: marketSymbol, analysis,
                 repeat: Infinity,
                 ease: "easeInOut"
               } : {}}
-              className="p-2 hover:bg-white/10 dark:hover:bg-white/5 rounded-xl transition-colors text-white/70 dark:text-slate-600 hover:text-white relative z-10"
+              className={`p-2 hover:bg-white/10 dark:hover:bg-white/5 rounded-xl transition-colors relative z-10 ${
+                isOlderThan3Days 
+                  ? 'text-rose-400 hover:text-rose-300 dark:text-rose-500 dark:hover:text-rose-450' 
+                  : 'text-white/70 dark:text-slate-600 hover:text-white'
+              }`}
+              title={isOlderThan3Days ? `Sync is ${daysOld} ${daysOld === 1 ? 'day' : 'days'} old. Click to Refresh!` : "Refresh Intelligence Pulse"}
             >
-              <RefreshCw className={`w-4 h-4 ${isAnalyzing ? 'animate-spin text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-400 to-emerald-400' : ''}`} style={isAnalyzing ? { color: 'initial', backgroundImage: 'linear-gradient(to right, #fb7185, #fbbf24, #34d399)', WebkitBackgroundClip: 'text', backgroundClip: 'text' } : {}} />
+              <RefreshCw className={`w-4 h-4 ${isAnalyzing ? 'animate-spin text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-amber-400 to-emerald-400' : isOlderThan3Days ? 'text-rose-400 dark:text-rose-500 animate-pulse' : ''}`} style={isAnalyzing ? { color: 'initial', backgroundImage: 'linear-gradient(to right, #fb7185, #fbbf24, #34d399)', WebkitBackgroundClip: 'text', backgroundClip: 'text' } : {}} />
               {showHint && !isAnalyzing && (
                 <span className="absolute inset-0 rounded-xl border-2 border-indigo-500/50 animate-ping opacity-75" />
               )}

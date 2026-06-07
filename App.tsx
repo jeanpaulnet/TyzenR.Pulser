@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MarketSymbol, AppState, PulserAnalysis, MarketType, UserProfile } from './types';
 import { INITIAL_SYMBOLS } from './constants';
 import { pulser } from './services/pulserAgent';
@@ -110,6 +110,9 @@ const App: React.FC = () => {
     }
     return { symbols: INITIAL_SYMBOLS, analyses: {}, generalNotes: '', marketSentiment: undefined };
   });
+
+  const [isStateLoadedFromServer, setIsStateLoadedFromServer] = useState(false);
+  const lastStateStringRef = useRef<string>('');
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -281,6 +284,7 @@ const App: React.FC = () => {
   // Persistence & User Level Watchlist Sync
   useEffect(() => {
     if (user && user.email) {
+      setIsStateLoadedFromServer(false);
       const loadUserRemoteState = async () => {
         try {
           console.log(`Syncing custom watchlist state with server-side account for ${user.email}...`);
@@ -289,29 +293,39 @@ const App: React.FC = () => {
             const remoteState = await res.json();
             
             if (remoteState && Array.isArray(remoteState.symbols) && remoteState.symbols.length > 0) {
-              setState({
+              const fullState = {
                 symbols: remoteState.symbols,
                 analyses: remoteState.analyses || {},
                 generalNotes: remoteState.generalNotes || '',
                 marketSentiment: remoteState.marketSentiment
-              });
+              };
+              lastStateStringRef.current = JSON.stringify(fullState);
+              setState(fullState);
               console.log("Successfully retrieved and synchronized your customized watchlist from the cloud!");
             } else {
               // User has no saved state on the server yet.
               // We should upload the current front-end state so they don't lose the assets they entered as a guest!
               console.log("Saving initial guest symbols to your new cloud account...");
+              lastStateStringRef.current = JSON.stringify(state);
               await fetch('/api/user/state', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: user.email, state }),
               });
             }
+            setIsStateLoadedFromServer(true);
+          } else {
+            setIsStateLoadedFromServer(true);
           }
         } catch (err) {
           console.error("Unable to query user's cloud watchlist:", err);
+          setIsStateLoadedFromServer(true);
         }
       };
       loadUserRemoteState();
+    } else {
+      setIsStateLoadedFromServer(false);
+      lastStateStringRef.current = '';
     }
   }, [user?.email]);
 
@@ -319,9 +333,17 @@ const App: React.FC = () => {
     // Local storage persistence always updated instantly for snappy tabs / browser loads
     localStorage.setItem('pulser_state', JSON.stringify(state));
 
-    if (user && user.email) {
+    if (user && user.email && isStateLoadedFromServer) {
+      const currentStateString = JSON.stringify(state);
+      
+      // Stop redundant API saves if nothing changed
+      if (currentStateString === lastStateStringRef.current) {
+        return;
+      }
+
       const saveTimeout = setTimeout(async () => {
         try {
+          lastStateStringRef.current = currentStateString;
           await fetch('/api/user/state', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -335,7 +357,7 @@ const App: React.FC = () => {
 
       return () => clearTimeout(saveTimeout);
     }
-  }, [state, user?.email]);
+  }, [state, user?.email, isStateLoadedFromServer]);
 
   useEffect(() => {
     if (user) {
@@ -823,6 +845,8 @@ const App: React.FC = () => {
     setUser(null);
     localStorage.removeItem('pulser_user');
     setIsUserMenuOpen(false);
+    setIsStateLoadedFromServer(false);
+    lastStateStringRef.current = '';
     // Reset back to INITIAL_SYMBOLS upon logout to prevent cross-contamination of watchlists and notes
     const resetState = {
       symbols: INITIAL_SYMBOLS,

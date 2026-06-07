@@ -125,6 +125,10 @@ const PriceChart: React.FC<PriceChartProps> = ({ analysis, theme, symbol }) => {
 const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose, onRefresh }) => {
   const snapshot = analysis?.snapshot;
 
+  const lastUpdated = analysis?.lastUpdated;
+  const isOlderThan3Days = lastUpdated ? (Date.now() - new Date(lastUpdated).getTime()) > 3 * 24 * 60 * 60 * 1000 : false;
+  const daysOld = lastUpdated ? Math.floor((Date.now() - new Date(lastUpdated).getTime()) / (24 * 60 * 60 * 1000)) : 0;
+
   // Sort growth data chronologically
   const growthData = [...(snapshot?.growthData || [])].sort((a, b) => {
     // Basic sorting for years
@@ -351,10 +355,14 @@ const SnapshotModal: React.FC<SnapshotModalProps> = ({ symbol, analysis, onClose
                 <button 
                   onClick={handleRefresh}
                   disabled={isRefreshing || analysis?.isAnalyzing}
-                  className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-all text-slate-400 hover:text-indigo-500 disabled:opacity-50"
-                  title="Refresh Intelligence Pulse"
+                  className={`p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-all disabled:opacity-50 ${
+                    isOlderThan3Days 
+                      ? 'text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-350' 
+                      : 'text-slate-400 hover:text-indigo-500'
+                  }`}
+                  title={isOlderThan3Days ? `Sync is ${daysOld} ${daysOld === 1 ? 'day' : 'days'} old. Click to Refresh!` : "Refresh Intelligence Pulse"}
                 >
-                  <RefreshCw className={`w-4 h-4 ${(isRefreshing || analysis?.isAnalyzing) ? 'animate-spin text-indigo-500' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 ${(isRefreshing || analysis?.isAnalyzing) ? 'animate-spin text-indigo-500' : isOlderThan3Days ? 'text-rose-500 dark:text-rose-400 animate-pulse' : ''}`} />
                 </button>
                 {analysis?.fromCache && (
                   <div className="flex items-center gap-1.5 px-2 py-0.5 bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20 rounded-lg">
