@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default safety catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Proxy support block: Allow reads and writes to user states
+    match /user_states/{email} {
+      allow read, write: if true;
+    }
+  }
+}
