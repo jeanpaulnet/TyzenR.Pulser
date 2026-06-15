@@ -292,7 +292,7 @@ const App: React.FC = () => {
           if (res.ok) {
             const remoteState = await res.json();
             
-            if (remoteState && Array.isArray(remoteState.symbols) && remoteState.symbols.length > 0) {
+            if (remoteState && Array.isArray(remoteState.symbols)) {
               const fullState = {
                 symbols: remoteState.symbols,
                 analyses: remoteState.analyses || {},

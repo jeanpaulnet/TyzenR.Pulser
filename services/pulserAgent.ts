@@ -256,8 +256,20 @@ export class PulserAgent {
               };
             }
           }
-        } catch (cacheError) {
+        } catch (cacheError: any) {
           console.warn("Cache lookup failed, proceeding with fresh scan:", cacheError);
+          const errInfo = {
+            error: cacheError.message || String(cacheError),
+            operationType: "get",
+            path: `analysis_cache/${symbol.symbol}`,
+            authInfo: {
+              userId: null,
+              email: null,
+              emailVerified: null,
+              isAnonymous: true
+            }
+          };
+          console.error("Firestore Structured Error:", JSON.stringify(errInfo));
         }
       }
 
@@ -770,8 +782,20 @@ export class PulserAgent {
             analysis: analysisResult,
             lastUpdated: serverTimestamp()
           });
-        } catch (cacheSaveError) {
+        } catch (cacheSaveError: any) {
           console.warn("Failed to save to global cache:", cacheSaveError);
+          const errInfo = {
+            error: cacheSaveError.message || String(cacheSaveError),
+            operationType: "write",
+            path: `analysis_cache/${symbol.symbol}`,
+            authInfo: {
+              userId: null,
+              email: null,
+              emailVerified: null,
+              isAnonymous: true
+            }
+          };
+          console.error("Firestore Structured Error:", JSON.stringify(errInfo));
         }
       }
 

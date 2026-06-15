@@ -36,6 +36,7 @@ function saveUserStateToFile(email: string, state: any) {
 
 async function getUserState(email: string): Promise<any> {
   const normEmail = email.toLowerCase().trim();
+  const path = `user_states/${normEmail}`;
   
   // 1. Try Firestore first if available
   try {
@@ -54,6 +55,19 @@ async function getUserState(email: string): Promise<any> {
     }
   } catch (err: any) {
     console.warn(`Firestore read failed for ${normEmail}, falling back to local file:`, err.message || err);
+    // Log structured Firestore error as required by the Firebase Skill
+    const errInfo = {
+      error: err.message || String(err),
+      operationType: "get",
+      path: path,
+      authInfo: {
+        userId: null,
+        email: normEmail,
+        emailVerified: null,
+        isAnonymous: false
+      }
+    };
+    console.error("Firestore Structured Error:", JSON.stringify(errInfo));
   }
 
   // 2. Fall back to local file persistence
@@ -63,6 +77,7 @@ async function getUserState(email: string): Promise<any> {
 
 async function saveUserState(email: string, state: any): Promise<void> {
   const normEmail = email.toLowerCase().trim();
+  const path = `user_states/${normEmail}`;
 
   // 1. Save to local file cache first (always have a backup, super fast)
   saveUserStateToFile(normEmail, state);
@@ -81,6 +96,19 @@ async function saveUserState(email: string, state: any): Promise<void> {
     }
   } catch (err: any) {
     console.warn(`Firestore sync failed for ${normEmail}:`, err.message || err);
+    // Log structured Firestore error as required by the Firebase Skill
+    const errInfo = {
+      error: err.message || String(err),
+      operationType: "write",
+      path: path,
+      authInfo: {
+        userId: null,
+        email: normEmail,
+        emailVerified: null,
+        isAnonymous: false
+      }
+    };
+    console.error("Firestore Structured Error:", JSON.stringify(errInfo));
   }
 }
 

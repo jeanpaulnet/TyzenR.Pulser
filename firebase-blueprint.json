@@ -20,12 +20,33 @@
         }
       },
       "required": ["email", "state"]
+    },
+    "AnalysisCache": {
+      "title": "AnalysisCache",
+      "description": "Cached analysis of a market symbol to share across users",
+      "type": "object",
+      "properties": {
+        "analysis": {
+          "type": "object",
+          "description": "The calculated PulserAnalysis structure"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server Timestamp of when the cache was written"
+        }
+      },
+      "required": ["analysis", "lastUpdated"]
     }
   },
   "firestore": {
     "/user_states/{email}": {
       "schema": "UserState",
       "description": "Durable user profiles holding asset lists and general notebook contents"
+    },
+    "/analysis_cache/{symbol}": {
+      "schema": "AnalysisCache",
+      "description": "Shared cache containing pre-scanned analyses of active tickers"
     }
   }
 }

@@ -6,9 +6,32 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Proxy support block: Allow reads and writes to user states
+    // Standard helper functions for data validation & integrity
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.\\@\\s]+$');
+    }
+
+    function isValidUserState(data) {
+      return data.keys().hasAll(['email', 'state'])
+        && data.email is string
+        && data.email.size() <= 256;
+    }
+
+    function isValidAnalysisCache(data) {
+      return data.keys().hasAll(['analysis', 'lastUpdated'])
+        && data.analysis is map;
+    }
+
+    // 1. User specific watchlists, notes and profiles
     match /user_states/{email} {
-      allow read, write: if true;
+      allow read: if isValidId(email);
+      allow write: if isValidId(email) && isValidUserState(request.resource.data);
+    }
+
+    // 2. Shared intelligence cache across all browser instances
+    match /analysis_cache/{symbol} {
+      allow read: if isValidId(symbol);
+      allow write: if isValidId(symbol) && isValidAnalysisCache(request.resource.data);
     }
   }
 }
