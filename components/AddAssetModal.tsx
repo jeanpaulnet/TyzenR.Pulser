@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MarketType, MarketSymbol } from '../types';
 import { Plus, X, Globe, Landmark, Coins, LineChart, Loader2, ChevronDown } from 'lucide-react';
 import { pulser } from '../services/pulserAgent';
-import { searchLocalSymbols } from '../services/commonSymbols';
+import { searchLocalSymbols, COMMON_SYMBOLS } from '../services/commonSymbols';
 
 interface AddSymbolModalProps {
   onAdd: (symbol: MarketSymbol) => void;
@@ -23,6 +23,7 @@ interface FormColumn {
   searchSuggestions: { symbol: string; name: string; type: MarketType }[];
   isSearching: boolean;
   isValidating: boolean;
+  matchedSymbol?: string | null;
 }
 
 const createNewColumn = (): FormColumn => ({
@@ -38,6 +39,7 @@ const createNewColumn = (): FormColumn => ({
   searchSuggestions: [],
   isSearching: false,
   isValidating: false,
+  matchedSymbol: null,
 });
 
 const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existingSymbols }) => {
@@ -91,6 +93,7 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
       region: argSugg.region || col.region,
       searchSuggestions: [],
       isFromSuggestion: true,
+      matchedSymbol: argSugg.symbol,
       error: null
     } : col));
   };
@@ -117,21 +120,17 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
         }
       }
 
+      const upper = trimmedSymbol.toUpperCase();
       if (trimmedSymbol && !col.isFromSuggestion) {
         const localMatches = searchLocalSymbols(trimmedSymbol, col.region);
         if (localMatches.length > 0) {
-          const upper = trimmedSymbol.toUpperCase();
           const exactSymbolMatch = localMatches.find(m => m.symbol.toUpperCase() === upper);
-          const exactNameMatch = localMatches.find(m => m.name.toUpperCase() === upper);
-          const startsWithNameMatch = localMatches.find(m => m.name.toUpperCase().startsWith(upper));
-          
-          const bestMatch = exactSymbolMatch || exactNameMatch || startsWithNameMatch || localMatches[0];
-          if (bestMatch) {
+          if (exactSymbolMatch) {
             updatedColumns[i] = {
               ...col,
-              symbol: bestMatch.symbol,
-              companyName: bestMatch.name,
-              type: bestMatch.type,
+              symbol: exactSymbolMatch.symbol,
+              companyName: exactSymbolMatch.name,
+              type: exactSymbolMatch.type,
               isFromSuggestion: true
             };
           }
@@ -191,11 +190,32 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
     try {
       const finalColumns = await Promise.all(
         updatedColumns.map(async (col) => {
-          if (col.isFromSuggestion) {
+          const trimmedSymbol = col.symbol.trim().toUpperCase();
+
+          // 1. Check if it matches an exact curated COMMON_SYMBOLS ticker
+          const matchedCommon = COMMON_SYMBOLS.find(
+            (item) =>
+              item.symbol.toUpperCase() === trimmedSymbol &&
+              (item.region === col.region || item.region === 'GLOBAL')
+          );
+
+          if (matchedCommon) {
+            return {
+              ...col,
+              symbol: matchedCommon.symbol,
+              companyName: matchedCommon.name,
+              type: matchedCommon.type,
+              isValidating: false,
+              error: null
+            };
+          }
+
+          // 2. If it's a selected suggestion and we already have matched name, proceed safely
+          if (col.isFromSuggestion && col.companyName) {
             return col;
           }
 
-          const trimmedSymbol = col.symbol.trim().toUpperCase();
+          // 3. Otherwise make a verification request via search-grounded validation
           try {
             // Set validating visual spinner for this column
             setColumns(prev => prev.map(p => p.id === col.id ? { ...p, isValidating: true } : p));
@@ -214,7 +234,9 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
             return {
               ...col,
               companyName: validation.name || col.companyName || trimmedSymbol,
-              isValidating: false
+              isValidating: false,
+              isFromSuggestion: true,
+              error: null
             };
           } catch (err) {
             console.error('Validation item error:', err);
@@ -260,6 +282,16 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
     columns.length === 1 ? 'max-w-md' :
     columns.length === 2 ? 'max-w-4xl' :
     'max-w-7xl';
+
+  const hasInvalidSymbol = columns.some(col => {
+    const trimmed = col.symbol.trim();
+    if (!trimmed) return true;
+    if (trimmed.includes(' ')) return true;
+    if (col.error !== null) return true;
+    return false;
+  });
+
+  const isAddDisabled = globalValidating || hasInvalidSymbol;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto">
@@ -328,7 +360,7 @@ const AddSymbolModal: React.FC<AddSymbolModalProps> = ({ onAdd, onClose, existin
             </button>
             <button
               type="submit"
-              disabled={globalValidating}
+              disabled={isAddDisabled}
               className={`w-1/2 px-4 py-2.5 text-xs rounded-xl font-black text-white disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-2 uppercase tracking-widest transition-all ${
                 columns.every(c => c.isFromSuggestion) 
                   ? 'bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-500/10' 
@@ -372,6 +404,7 @@ const SymbolColumnPanel: React.FC<{
     searchSuggestions,
     isSearching,
     isValidating,
+    matchedSymbol,
   } = column;
 
   const preprocessSuggestions = (suggestions: { symbol: string; name: string; type: MarketType; region?: 'US' | 'INDIA' | 'GLOBAL' }[]) => {
@@ -531,22 +564,31 @@ const SymbolColumnPanel: React.FC<{
       const upper = trimmed.toUpperCase();
       
       const exactMatch = localResults.find(r => 
-        r.symbol.toUpperCase() === upper ||
-        r.name.toUpperCase() === upper ||
-        (upper.length >= 3 && r.name.toUpperCase().startsWith(upper))
+        r.symbol.toUpperCase() === upper
       );
+      const closeMatch = exactMatch || localResults.find(r =>
+        r.symbol.toUpperCase().startsWith(upper) || r.name.toUpperCase().startsWith(upper)
+      );
+
+      let localError: string | null = null;
+      if (symbol.includes(' ')) {
+        localError = 'Symbols cannot have spaces';
+      }
 
       onUpdate(id, {
         searchSuggestions: localResults,
-        companyName: exactMatch ? exactMatch.name : (isFromSuggestion ? companyName : ''),
-        type: exactMatch ? exactMatch.type : type,
-        isFromSuggestion: exactMatch ? true : isFromSuggestion,
-        error: null
+        companyName: exactMatch ? exactMatch.name : (closeMatch ? closeMatch.name : ''),
+        matchedSymbol: exactMatch ? exactMatch.symbol : (closeMatch ? closeMatch.symbol : null),
+        type: exactMatch ? exactMatch.type : (closeMatch ? closeMatch.type : type),
+        isFromSuggestion: exactMatch ? true : false,
+        error: localError
       });
     } else {
       onUpdate(id, {
         searchSuggestions: [],
-        companyName: isFromSuggestion ? companyName : '',
+        companyName: '',
+        matchedSymbol: null,
+        isFromSuggestion: false,
         error: null
       });
     }
@@ -622,6 +664,7 @@ const SymbolColumnPanel: React.FC<{
         onUpdate(id, {
           searchSuggestions: merged,
           companyName: match ? match.name : (isFromSuggestion ? companyName : ''),
+          matchedSymbol: match ? match.symbol : null,
           type: match ? match.type : type,
           isFromSuggestion: match ? (match.symbol.toUpperCase() === upperInput) : isFromSuggestion,
           isSearching: false
@@ -718,15 +761,58 @@ const SymbolColumnPanel: React.FC<{
 
           {/* Matched Company Display */}
           {companyName && (
-            <div className="mt-2.5 px-3 py-2 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-xl transition-all">
-              <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-0.5">Matched Entity</p>
+            <button
+              type="button"
+              onClick={() => {
+                if (matchedSymbol) {
+                  onUpdate(id, {
+                    symbol: matchedSymbol,
+                    isFromSuggestion: true,
+                    error: null,
+                    searchSuggestions: []
+                  });
+                }
+              }}
+              className={`mt-2.5 w-full text-left px-3 py-2 border rounded-xl transition-all flex flex-col gap-1 ${
+                matchedSymbol && matchedSymbol.toUpperCase() !== symbol.trim().toUpperCase()
+                  ? 'bg-indigo-50 hover:bg-indigo-100/85 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 border-indigo-200 dark:border-indigo-550/30 cursor-pointer'
+                  : 'bg-emerald-50/50 dark:bg-emerald-550/5 border-emerald-100 dark:border-emerald-550/10 cursor-default'
+              }`}
+            >
+              <div className="flex justify-between items-center w-full">
+                <span className={`text-[9px] font-black uppercase tracking-widest ${
+                  matchedSymbol && matchedSymbol.toUpperCase() !== symbol.trim().toUpperCase()
+                    ? 'text-indigo-500 dark:text-indigo-400'
+                    : 'text-emerald-600 dark:text-emerald-400'
+                }`}>
+                  {matchedSymbol && matchedSymbol.toUpperCase() !== symbol.trim().toUpperCase()
+                    ? 'Match Found (Click to Apply)'
+                    : 'Matched Entity'
+                  }
+                </span>
+                {matchedSymbol && matchedSymbol.toUpperCase() !== symbol.trim().toUpperCase() && (
+                  <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-300 animate-pulse">
+                    Correct to {matchedSymbol} →
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2">
-                <div className="p-1 bg-indigo-500 rounded-lg shadow-sm">
+                <div className={`p-1 rounded-lg shadow-sm ${
+                  matchedSymbol && matchedSymbol.toUpperCase() !== symbol.trim().toUpperCase()
+                    ? 'bg-indigo-500'
+                    : 'bg-emerald-500'
+                }`}>
                   <LineChart className="w-2.5 h-2.5 text-white" />
                 </div>
-                <span className="text-[10px] font-extrabold text-indigo-700 dark:text-indigo-300 truncate">{companyName}</span>
+                <span className={`text-[10px] font-extrabold truncate ${
+                  matchedSymbol && matchedSymbol.toUpperCase() !== symbol.trim().toUpperCase()
+                    ? 'text-indigo-900 dark:text-indigo-200'
+                    : 'text-emerald-900 dark:text-emerald-200'
+                }`}>
+                  {companyName} {matchedSymbol ? `(${matchedSymbol})` : ''}
+                </span>
               </div>
-            </div>
+            </button>
           )}
 
           {/* Error messages */}

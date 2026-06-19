@@ -281,13 +281,25 @@ export class PulserAgent {
         ? "CRITICAL: For currentPrice/CMP, strictly prioritize data from coinmarketcap.com." 
         : "For currentPrice/CMP, use real-time data from financial news or exchange sites.";
 
-      // Thread 1: Structural Core Trend & Standard Financial Ratios/Snapshot
-      const promptCore = `Perform an institutional-grade core structural analysis for ${symbol.symbol} (${symbol.name}) in the ${symbol.type} market. 
+      const screenerHint = symbol.region === 'INDIA' 
+        ? "CRITICAL: For 'growthData' of India stocks, prioritize and run Google Searches specifically on screener.in (such as site:screener.in) to fetch accurate annual consecutive revenue/sales and net profit values for the last 5 consecutive years."
+        : "";
+
+      // Unified Prompt: Structural Core, Historical Pricing Patterns, and Peer Benchmark Comparisons in a Single Turn
+      const promptCombined = `Conduct a comprehensive, high-fidelity institutional-grade market scan and financial analysis for ${symbol.symbol} (${symbol.name}) in the ${symbol.type} market.
       Current Date: ${currentDate}.
       
       ${priceSourceHint}
+      ${screenerHint}
       
-      CRITICAL INSTRUCTION: Use Google Search to find current live prices, company details, news, and core ratios. Keep summaries direct and high-impact.
+      CRITICAL INSTRUCTION: Use Google Search to retrieve live prices, corporate news, financial ratios, peer metrics, and 5-year consecutive annual financials. 
+      You MUST retrieve and return the following data points compiled correctly:
+      1. Short-term and long-term trends, with an in-depth summary of key catalysts.
+      2. Snapshot metrics: ROE%, ROCE%, PE, PB, Market Cap, Today's Change % (must expand to a plus '+' or '-' prefixed string like +1.24% or -0.50%), moving averages (ma50, ma100, ma200), RSI value, and margin of safety.
+      3. growthData: Consecutive annual revenue/profit/growth for past 5 consecutive years (for Indian stocks, search screener.in).
+      4. historicalData: Chronological true series of 6-8 spaced-out price points for 1M, 1Y, and 5Y charting.
+      5. peers: CMP, PE, Market Cap, PB for 3 direct competitors.
+      6. analystViews: 2-3 most recent professional rating updates with firm name, target prices, and source URLs.
       
       JSON OUTPUT FORMAT:
       {
@@ -297,7 +309,7 @@ export class PulserAgent {
         "summary": "Detailed narrative covering catalysts and trends.",
         "currentPrice": "Price (e.g., 150.50 or 50000.00)",
         "currencySymbol": "Currency (e.g., $ or ₹)",
-        "sources": [{"title": "Headline or site", "url": "DIRECT_URL"}],
+        "sources": [{"title": "Headline or site/source name", "url": "DIRECT_URL"}],
         "snapshot": {
           "intrinsicValue": "Value",
           "cmp": "Current Market Price",
@@ -323,70 +335,26 @@ export class PulserAgent {
           "founded": "Year",
           "employees": "Count",
           "expansionPlans": [{"plan": "Strategic point", "date": "e.g., Q4 2026"}],
-          "news": [{"title": "Article Headline", "url": "ARTICLE_URL", "date": "Published Date"}]
-        }
-      }`;
-
-      // Thread 2: Five-Year Growth & High Fidelity Historical Price Charting
-      const screenerHint = symbol.region === 'INDIA' 
-        ? "CRITICAL: For 'growthData' of India stocks, prioritize and run Google Searches specifically on screener.in (such as site:screener.in) to fetch accurate annual consecutive revenue/sales and net profit values for the last 5 consecutive years."
-        : "";
-
-      const promptHistorical = `Gather consecutive annual revenue/profit files and accurate historical stock price patterns for ${symbol.symbol} (${symbol.name}) in the ${symbol.type} market.
-      Current Date: ${currentDate}.
-      
-      ${screenerHint}
-      
-      CRITICAL: For "growthData", find and include the Revenue and Profit (Net Income) for the PAST 5 CONSECUTIVE YEARS for the "Growth Chart".
-      CRITICAL: For "historicalData", use Google Finance search results to provide 6-8 key spaced-out true chronological price points for each period: 1 Month (1M), 1 Year (1Y), and 5 Years (5Y). This is optimized for smooth, representative rendering in Recharts charts.
-      
-      JSON OUTPUT FORMAT:
-      {
-        "snapshot": {
+          "news": [{"title": "Article Headline", "url": "ARTICLE_URL", "date": "Published Date"}],
           "growthData": [{"year": "YYYY", "revenue": number, "profit": number, "growth": number}],
           "historicalData": {
             "1M": [{"date": "YYYY-MM-DD", "price": number}],
             "1Y": [{"date": "YYYY-MM-DD", "price": number}],
             "5Y": [{"date": "YYYY-MM-DD", "price": number}]
-          }
-        }
-      }`;
-
-      // Thread 3: Peer Comparisons & Live Professional Analyst Views
-      const promptPeers = `Gather peer/competitor metrics and recent professional analyst ratings/price targets for ${symbol.symbol} (${symbol.name}) in the ${symbol.type} market.
-      Current Date: ${currentDate}.
-      
-      CRITICAL: For competitor "peers" section, conduct a Google Search for 3 direct competitors. Find their REAL-TIME Market Cap, PE Ratio, PB Ratio, and CMP (Current Market Price). Do NOT use generic placeholder values.
-      CRITICAL: For "analystViews", find 2-3 of the most RECENT ratings (Buy/Sell/Hold), price targets, and the direct source URL or a reputable coverage article URL. Every rating must have a live news or report link.
-      
-      JSON OUTPUT FORMAT:
-      {
-        "snapshot": {
+          },
           "peers": [{"name": "PEER_TICKER", "pe": "PE Ratio", "marketCap": "Market Cap", "pb": "PB Ratio", "cmp": "Current Price"}],
           "peerComparison": "Paragraph comparing valuation (PE/PB) and performance against peers using real data.",
           "analystViews": [{"firm": "Firm Name", "rating": "Buy/Sell/etc", "targetPrice": "Price", "date": "Date", "url": "ARTICLE_OR_REPORT_URL"}]
         }
       }`;
 
-      // Run specialized analysis threads in parallel
-      const [responseCore, responseHistorical, responsePeers] = await Promise.all([
-        this.callAi(promptCore, { tools: [{ googleSearch: {} }] }).catch(err => {
-          console.error("Thread 1 (Core) failed, carrying on:", err);
-          return null;
-        }),
-        this.callAi(promptHistorical, { tools: [{ googleSearch: {} }] }).catch(err => {
-          console.error("Thread 2 (Historical) failed, carrying on:", err);
-          return null;
-        }),
-        this.callAi(promptPeers, { tools: [{ googleSearch: {} }] }).catch(err => {
-          console.error("Thread 3 (Peers) failed, carrying on:", err);
-          return null;
-        })
-      ]);
+      // Run combined analysis thread with search grounding tool
+      const responseCombined = await this.callAi(promptCombined, { tools: [{ googleSearch: {} }] }).catch(err => {
+        console.error("Unified Analysis Thread failed:", err);
+        return null;
+      });
 
-      let dataCore: any = {};
-      let dataHistorical: any = {};
-      let dataPeers: any = {};
+      let dataCombined: any = {};
 
       const cleanAndParseJson = (text: string) => {
         try {
@@ -410,70 +378,37 @@ export class PulserAgent {
       let verifiedLinks: { title: string; url: string }[] = [];
       const verifiedUris = new Set<string>();
 
-      // Extract details and grounding chunks from Thread 1
-      if (responseCore) {
+      // Extract details and grounding chunks from the unified response
+      if (responseCombined) {
         try {
-          const text = responseCore.text || "";
-          dataCore = cleanAndParseJson(text);
+          const text = responseCombined.text || "";
+          dataCombined = cleanAndParseJson(text);
 
-          const candidate = (responseCore as any).candidates?.[0];
+          const candidate = (responseCombined as any).candidates?.[0];
           const groundingMetadata = (candidate as any)?.groundingMetadata;
           const chunks = groundingMetadata?.groundingChunks || [];
           const links = chunks
             .filter((c: any) => c.web?.uri)
             .map((c: any) => ({
-              title: c.web.title || "Core Verified Source",
+              title: c.web.title || "Verified Source",
               url: c.web.uri
             }));
           verifiedLinks = [...verifiedLinks, ...links];
         } catch (e) {
-          console.warn("Failed to parse Thread 1 Core JSON:", e);
-        }
-      }
-
-      // Extract details and grounding chunks from Thread 2
-      if (responseHistorical) {
-        try {
-          const text = responseHistorical.text || "";
-          dataHistorical = cleanAndParseJson(text);
-        } catch (e) {
-          console.warn("Failed to parse Thread 2 Historical JSON:", e);
-        }
-      }
-
-      // Extract details and grounding chunks from Thread 3
-      if (responsePeers) {
-        try {
-          const text = responsePeers.text || "";
-          dataPeers = cleanAndParseJson(text);
-
-          const candidate = (responsePeers as any).candidates?.[0];
-          const groundingMetadata = (candidate as any)?.groundingMetadata;
-          const chunks = groundingMetadata?.groundingChunks || [];
-          const links = chunks
-            .filter((c: any) => c.web?.uri)
-            .map((c: any) => ({
-              title: c.web.title || "Analyst Verified Source",
-              url: c.web.uri
-            }));
-          verifiedLinks = [...verifiedLinks, ...links];
-        } catch (e) {
-          console.warn("Failed to parse Thread 3 Peers JSON:", e);
+          console.warn("Failed to parse Unified Analysis JSON:", e);
         }
       }
 
       verifiedLinks.forEach((l: any) => verifiedUris.add(l.url));
 
-      // Merge snapshots from all three threads
+      // Merge snapshots from the unified data structure
       const mergedSnapshotObj = {
-        ...(dataCore.snapshot || {}),
-        ...(dataHistorical.snapshot || {}),
-        ...(dataPeers.snapshot || {})
+        ...(dataCombined.snapshot || {})
       };
 
       // Consolidate into backward-compatible combined 'data'
       const data = {
-        ...dataCore,
+        ...dataCombined,
         snapshot: mergedSnapshotObj
       };
 
